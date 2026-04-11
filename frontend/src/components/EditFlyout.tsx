@@ -45,7 +45,11 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         }
     };
 
-    if (!isOpen || !record) return null;
+    console.log('[EditFlyout] isOpen:', isOpen, 'record:', record ? record.employee_name : 'null');
+
+    if (!isOpen || !record) {
+        return null;
+    }
 
     const editableFields = [
         'last_person_name',
