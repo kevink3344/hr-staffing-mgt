@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Download, RefreshCw, Settings2, Sun, Moon } from 'lucide-react';
 import { staffApi, viewsApi } from '../api';
 import { STAFF_COLUMNS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass } from '../utils';
@@ -209,32 +210,29 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             <button
                                 onClick={() => setIsImportOpen(true)}
                                 aria-label="Import Excel data"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${
-                                    isDark ? 'text-orange-300 hover:text-orange-200' : 'text-orange-700 hover:text-orange-600'
-                                }`}
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-orange-300 hover:text-orange-200' : 'text-orange-700 hover:text-orange-600'
+                                    }`}
                                 title="Import Excel data"
                             >
-                                📥
+                                <Download size={20} strokeWidth={2.5} />
                             </button>
                             <button
                                 onClick={loadRecords}
                                 aria-label="Refresh data"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${
-                                    isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-700 hover:text-blue-600'
-                                }`}
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-700 hover:text-blue-600'
+                                    }`}
                                 title="Refresh data"
                             >
-                                🔄
+                                <RefreshCw size={20} strokeWidth={2.5} />
                             </button>
                             <button
                                 onClick={onNavigateToViews}
                                 aria-label="Manage views"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${
-                                    isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-700 hover:text-violet-600'
-                                }`}
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-700 hover:text-violet-600'
+                                    }`}
                                 title="Manage views"
                             >
-                                ⚙
+                                <Settings2 size={20} strokeWidth={2.5} />
                             </button>
                             <button
                                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -245,7 +243,11 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                                     }`}
                                 title="Toggle light/dark surrounding UI"
                             >
-                                {isDark ? '☀' : '🌙'}
+                                {isDark ? (
+                                    <Sun size={20} strokeWidth={2.5} />
+                                ) : (
+                                    <Moon size={20} strokeWidth={2.5} />
+                                )}
                             </button>
                         </div>
                     </div>
