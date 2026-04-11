@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import XLSX from 'xlsx';
 import { importExcelData } from '../excelImport.js';
+import { getDatabase } from '../database.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const upload = multer({ dest: path.join(__dirname, '../../uploads') });
@@ -98,7 +99,6 @@ router.post('/headers', upload.single('file'), async (req: Request, res: Respons
 // Fix existing records that have Excel date serials stored as strings (e.g. "46203")
 router.post('/fix-dates', async (req: Request, res: Response) => {
     try {
-        const { getDatabase } = await import('../database.js');
         const db = await getDatabase();
 
         const DATE_COLS = ['pos_start', 'pos_end', 'contract_end', 'expires',
