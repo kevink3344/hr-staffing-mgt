@@ -44,4 +44,9 @@ export const importApi = {
     fixDates: () => api.post('/import/fix-dates'),
 };
 
+// Staff API (additional)
+export const staffDeleteApi = {
+    deleteAll: () => api.delete('/staff/all'),
+};
+
 export default api;

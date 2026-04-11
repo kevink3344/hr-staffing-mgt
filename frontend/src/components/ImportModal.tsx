@@ -11,6 +11,7 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
     const [file, setFile] = useState<File | null>(null);
     const [isImporting, setIsImporting] = useState(false);
     const [isFixing, setIsFixing] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [message, setMessage] = useState('');
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,6 +31,26 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
             setMessage('❌ Fix dates failed');
         } finally {
             setIsFixing(false);
+        }
+    };
+
+    const handleDeleteAll = async () => {
+        if (!window.confirm('⚠️  Delete ALL staff records? This cannot be undone.')) {
+            return;
+        }
+        setIsDeleting(true);
+        try {
+            const { staffDeleteApi } = await import('../api.js');
+            const res = await staffDeleteApi.deleteAll();
+            setMessage(`🗑️  Deleted ${res.data.deleted} records!`);
+            setTimeout(() => {
+                onImportSuccess();
+            }, 1000);
+        } catch (err) {
+            console.error('Delete failed:', err);
+            setMessage('❌ Delete failed');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -100,22 +121,30 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
                 <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={handleImport}
-                        disabled={!file || isImporting || isFixing}
+                        disabled={!file || isImporting || isFixing || isDeleting}
                         className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
                     >
                         {isImporting ? 'Importing...' : 'Import'}
                     </button>
                     <button
                         onClick={handleFixDates}
-                        disabled={isImporting || isFixing}
+                        disabled={isImporting || isFixing || isDeleting}
                         title="Fix Excel date serial numbers (e.g. 46203) in already-imported records"
                         className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
                     >
                         {isFixing ? 'Fixing...' : 'Fix Dates'}
                     </button>
                     <button
+                        onClick={handleDeleteAll}
+                        disabled={isImporting || isFixing || isDeleting}
+                        title="Delete all staff records (demo reset)"
+                        className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-red-800"
+                    >
+                        {isDeleting ? 'Deleting...' : 'Delete All'}
+                    </button>
+                    <button
                         onClick={onClose}
-                        disabled={isImporting || isFixing}
+                        disabled={isImporting || isFixing || isDeleting}
                         className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
                     >
                         Cancel
