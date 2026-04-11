@@ -11,7 +11,7 @@ interface EditFlyoutProps {
 
 export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps) {
     const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
-    const [formData, setFormData] = useState<any>(record);
+    const [formData, setFormData] = useState<any>(record || {});
     const [history, setHistory] = useState<any[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -20,7 +20,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
             setFormData(record);
             loadHistory(record.id);
         }
-    }, [record, isOpen]);
+    }, [record]);
 
     const loadHistory = async (recordId: number) => {
         try {
