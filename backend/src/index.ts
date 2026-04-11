@@ -3,6 +3,11 @@ import cors from 'cors';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUiExpress from 'swagger-ui-express';
 import { config } from 'dotenv';
+import { initializeDatabase } from './database.js';
+import staffRoutes from './routes/staff.js';
+import historyRoutes from './routes/history.js';
+import viewsRoutes from './routes/views.js';
+import importRoutes from './routes/import.js';
 
 config();
 
@@ -58,8 +63,11 @@ app.get('/', (req, res) => {
     });
 });
 
-// Routes (to be added)
-// app.use('/api/staff', staffRoutes);
+// Routes
+app.use('/api/staff', staffRoutes);
+app.use('/api/history', historyRoutes);
+app.use('/api/views', viewsRoutes);
+app.use('/api/import', importRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -67,7 +75,18 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📚 API Documentation available at http://localhost:${PORT}/api-docs`);
-});
+// Initialize database and start server
+async function start() {
+    try {
+        await initializeDatabase();
+        app.listen(PORT, () => {
+            console.log(`🚀 Server running on http://localhost:${PORT}`);
+            console.log(`📚 API Documentation available at http://localhost:${PORT}/api-docs`);
+        });
+    } catch (err) {
+        console.error('Failed to start server:', err);
+        process.exit(1);
+    }
+}
+
+start();
