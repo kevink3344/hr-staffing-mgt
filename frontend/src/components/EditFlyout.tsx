@@ -226,7 +226,8 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                             </button>
                         </div>
                     </div>
+                </div>
             )}
-                </>
-            );
+        </>
+    );
 }
