@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { staffApi, viewsApi } from '../api';
 import { STAFF_COLUMNS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass } from '../utils';
@@ -12,55 +12,51 @@ interface DataTableProps {
 }
 
 function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
-    const scrollRef = useRef<HTMLDivElement>(null);
-
     return (
-        <div className="overflow-x-auto">
-            <div ref={scrollRef} className="inline-block min-w-full">
-                <table className="font-mono border-collapse border-2 border-gray-800">
-                    <thead className="bg-gray-900 text-white sticky top-0 z-10">
-                        <tr className="border-b-2 border-gray-800">
-                            <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12">
-                                #
+        <div className="overflow-x-auto w-full">
+            <table className="w-full font-mono border-collapse border-2 border-gray-800">
+                <thead className="bg-gray-900 text-white sticky top-0 z-10">
+                    <tr className="border-b-2 border-gray-800">
+                        <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                            #
+                        </th>
+                        {visibleColumns.map((col) => (
+                            <th
+                                key={col}
+                                className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
+                            >
+                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {records.map((record, idx) => (
+                        <tr
+                            key={record.id}
+                            onClick={() => onRowClick(record)}
+                            className={`${getRowColorClass(
+                                record
+                            )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
+                        >
+                            <td className="border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 font-bold w-12 min-w-12">
+                                {idx + 1}
+                            </td>
                             {visibleColumns.map((col) => (
-                                <th
-                                    key={col}
-                                    className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-max"
+                                <td
+                                    key={`${record.id}-${col}`}
+                                    className={`border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${getCellColorClass(
+                                        col,
+                                        record
+                                    )}`}
                                 >
-                                    {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
-                                </th>
+                                    {record[col] || '—'}
+                                </td>
                             ))}
                         </tr>
-                    </thead>
-                    <tbody>
-                        {records.map((record, idx) => (
-                            <tr
-                                key={record.id}
-                                onClick={() => onRowClick(record)}
-                                className={`${getRowColorClass(
-                                    record
-                                )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
-                            >
-                                <td className="border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 font-bold w-12">
-                                    {idx + 1}
-                                </td>
-                                {visibleColumns.map((col) => (
-                                    <td
-                                        key={`${record.id}-${col}`}
-                                        className={`border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis max-w-96 ${getCellColorClass(
-                                            col,
-                                            record
-                                        )}`}
-                                    >
-                                        {record[col] || '—'}
-                                    </td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }
@@ -235,7 +231,7 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
 
             {/* Table */}
             <main className="p-6">
-                <div className="bg-white rounded-2px border-2 border-gray-800 overflow-hidden shadow-lg">
+                <div className="bg-white rounded-2px border-2 border-gray-800 overflow-x-auto shadow-lg">
                     <DataTable
                         records={records}
                         visibleColumns={visibleColumns}
