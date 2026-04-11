@@ -12,51 +12,83 @@ interface DataTableProps {
 }
 
 function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
+    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+    const topScrollRef = React.useRef<HTMLDivElement>(null);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (scrollContainerRef.current && topScrollRef.current) {
+            topScrollRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
+        }
+    };
+
+    const handleTopScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (scrollContainerRef.current && topScrollRef.current) {
+            scrollContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+        }
+    };
+
     return (
-        <div className="overflow-x-auto w-full">
-            <table className="w-full font-mono border-collapse border-2 border-gray-800">
-                <thead className="bg-gray-900 text-white sticky top-0 z-10">
-                    <tr className="border-b-2 border-gray-800">
-                        <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
-                            #
-                        </th>
-                        {visibleColumns.map((col) => (
-                            <th
-                                key={col}
-                                className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
-                            >
-                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+        <div className="w-full">
+            {/* Top scrollbar (invisible, synced) */}
+            <div
+                ref={topScrollRef}
+                onScroll={handleTopScroll}
+                className="overflow-x-auto w-full"
+                style={{ height: '8px', visibility: 'hidden' }}
+            >
+                <div style={{ width: '100%', height: '1px' }} />
+            </div>
+
+            {/* Main table with synchronized scroll */}
+            <div
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+                className="overflow-x-auto w-full"
+            >
+                <table className="w-full font-mono border-collapse border-2 border-gray-800">
+                    <thead className="bg-gray-900 text-white sticky top-0 z-10">
+                        <tr className="border-b-2 border-gray-800">
+                            <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                                #
                             </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {records.map((record, idx) => (
-                        <tr
-                            key={record.id}
-                            onClick={() => onRowClick(record)}
-                            className={`${getRowColorClass(
-                                record
-                            )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
-                        >
-                            <td className="border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 font-bold w-12 min-w-12">
-                                {idx + 1}
-                            </td>
                             {visibleColumns.map((col) => (
-                                <td
-                                    key={`${record.id}-${col}`}
-                                    className={`border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${getCellColorClass(
-                                        col,
-                                        record
-                                    )}`}
+                                <th
+                                    key={col}
+                                    className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
                                 >
-                                    {record[col] || '—'}
-                                </td>
+                                    {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                </th>
                             ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {records.map((record, idx) => (
+                            <tr
+                                key={record.id}
+                                onClick={() => onRowClick(record)}
+                                className={`${getRowColorClass(
+                                    record
+                                )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
+                            >
+                                <td className="border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 font-bold w-12 min-w-12">
+                                    {idx + 1}
+                                </td>
+                                {visibleColumns.map((col) => (
+                                    <td
+                                        key={`${record.id}-${col}`}
+                                        className={`border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${getCellColorClass(
+                                            col,
+                                            record
+                                        )}`}
+                                    >
+                                        {record[col] || '—'}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
