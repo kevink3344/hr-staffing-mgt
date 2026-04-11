@@ -69,13 +69,6 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         'comments',
     ];
 
-    const readOnlyFields = [
-        'employee_name',
-        'emp_no',
-        'position_name',
-        'pos_no',
-    ];
-
     return (
         <>
             {isOpen && (
@@ -128,21 +121,14 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                         <div className="flex-1 overflow-y-auto">
                             {activeTab === 'details' ? (
                                 <div className="p-4 space-y-4">
-                                    {/* Read-only fields at top */}
+                                    {/* Position name only */}
                                     <div className="bg-gray-100 p-3 rounded-2px border-2 border-gray-300">
-                                        <h3 className="font-mono font-bold text-xs text-gray-700 mb-3">
-                                            POSITION INFO (READ-ONLY)
-                                        </h3>
-                                        {readOnlyFields.map((field) => (
-                                            <div key={field} className="mb-2">
-                                                <label className="text-xs font-mono text-gray-600">
-                                                    {COLUMN_LABELS[field as keyof typeof COLUMN_LABELS]}
-                                                </label>
-                                                <div className="text-sm font-mono text-gray-900 mt-1">
-                                                    {formData[field] || '—'}
-                                                </div>
-                                            </div>
-                                        ))}
+                                        <label className="text-xs font-mono text-gray-600">
+                                            {COLUMN_LABELS.position_name}
+                                        </label>
+                                        <div className="text-sm font-mono text-gray-900 mt-1">
+                                            {formData.position_name || '—'}
+                                        </div>
                                     </div>
 
                                     {/* Editable fields */}
