@@ -191,8 +191,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
             {/* Header */}
             <header
                 className={`border-b-4 p-6 sticky top-0 z-20 ${isDark
-                        ? 'bg-gray-900 border-gray-800'
-                        : 'bg-white border-gray-300'
+                    ? 'bg-gray-900 border-gray-800'
+                    : 'bg-white border-gray-300'
                     }`}
             >
                 <div className="max-w-full mx-auto">
@@ -209,7 +209,9 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             <button
                                 onClick={() => setIsImportOpen(true)}
                                 aria-label="Import Excel data"
-                                className="bg-orange-600 hover:bg-orange-700 text-white font-mono font-bold h-10 w-10 rounded-2px border-2 border-orange-800 flex items-center justify-center"
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${
+                                    isDark ? 'text-orange-300 hover:text-orange-200' : 'text-orange-700 hover:text-orange-600'
+                                }`}
                                 title="Import Excel data"
                             >
                                 📥
@@ -217,7 +219,9 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             <button
                                 onClick={loadRecords}
                                 aria-label="Refresh data"
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-mono font-bold h-10 w-10 rounded-2px border-2 border-blue-800 flex items-center justify-center"
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${
+                                    isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-700 hover:text-blue-600'
+                                }`}
                                 title="Refresh data"
                             >
                                 🔄
@@ -225,7 +229,9 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             <button
                                 onClick={onNavigateToViews}
                                 aria-label="Manage views"
-                                className="bg-purple-600 hover:bg-purple-700 text-white font-mono font-bold h-10 w-10 rounded-2px border-2 border-purple-800 flex items-center justify-center"
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${
+                                    isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-700 hover:text-violet-600'
+                                }`}
                                 title="Manage views"
                             >
                                 ⚙
@@ -233,9 +239,9 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             <button
                                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
                                 aria-label="Toggle light/dark surrounding UI"
-                                className={`font-mono font-bold h-10 w-10 rounded-2px border-2 flex items-center justify-center ${isDark
-                                        ? 'bg-gray-800 hover:bg-gray-700 text-white border-gray-600'
-                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border-gray-300'
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark
+                                    ? 'text-yellow-300 hover:text-yellow-200'
+                                    : 'text-slate-700 hover:text-slate-900'
                                     }`}
                                 title="Toggle light/dark surrounding UI"
                             >
@@ -254,8 +260,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className={`w-full px-3 py-2 border-2 rounded-2px font-mono text-sm focus:outline-none focus:border-blue-500 ${isDark
-                                        ? 'border-gray-600 bg-slate-800 text-slate-100 placeholder-gray-500'
-                                        : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400'
+                                    ? 'border-gray-600 bg-slate-800 text-slate-100 placeholder-gray-500'
+                                    : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400'
                                     }`}
                             />
                         </div>
@@ -265,8 +271,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             value={currentView}
                             onChange={(e) => handleViewChange(e.target.value)}
                             className={`px-3 py-2 border-2 rounded-2px font-mono text-sm focus:outline-none focus:border-blue-500 ${isDark
-                                    ? 'border-gray-600 bg-slate-800 text-slate-100'
-                                    : 'border-gray-300 bg-white text-slate-900'
+                                ? 'border-gray-600 bg-slate-800 text-slate-100'
+                                : 'border-gray-300 bg-white text-slate-900'
                                 }`}
                         >
                             {views.map((view) => (
@@ -279,8 +285,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                         {/* Record Count */}
                         <div
                             className={`border-2 rounded-2px px-3 py-2 font-mono text-sm ${isDark
-                                    ? 'bg-gray-800 border-gray-600'
-                                    : 'bg-white border-gray-300'
+                                ? 'bg-gray-800 border-gray-600'
+                                : 'bg-white border-gray-300'
                                 }`}
                         >
                             <span className="font-bold text-blue-400">{records.length}</span>
