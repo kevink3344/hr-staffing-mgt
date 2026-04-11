@@ -14,6 +14,7 @@ interface DataTableProps {
 function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
     const topScrollRef = React.useRef<HTMLDivElement>(null);
+    const tableMinWidthPx = 48 + visibleColumns.length * 160;
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         if (scrollContainerRef.current && topScrollRef.current) {
@@ -36,7 +37,7 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
                 className="overflow-x-auto w-full bg-gray-100 border-b-2 border-gray-300"
                 style={{ height: '12px' }}
             >
-                <div style={{ width: '100%', height: '1px' }} />
+                <div style={{ width: `${tableMinWidthPx}px`, height: '1px' }} />
             </div>
 
             {/* Main table with synchronized scroll */}
