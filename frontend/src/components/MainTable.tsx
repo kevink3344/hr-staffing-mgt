@@ -29,7 +29,7 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
     };
 
     return (
-        <div className="w-full">
+        <div className="w-full pt-1">
             {/* Top scrollbar (visible, synced) */}
             <div
                 ref={topScrollRef}
