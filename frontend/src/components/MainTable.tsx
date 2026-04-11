@@ -109,6 +109,15 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     const [views, setViews] = useState<any[]>([]);
     const [visibleColumns, setVisibleColumns] = useState<string[]>(STAFF_COLUMNS);
     const [isImportOpen, setIsImportOpen] = useState(false);
+    const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+        const saved = localStorage.getItem('mainUiTheme');
+        return saved === 'light' ? 'light' : 'dark';
+    });
+    const isDark = theme === 'dark';
+
+    useEffect(() => {
+        localStorage.setItem('mainUiTheme', theme);
+    }, [theme]);
 
     useEffect(() => {
         loadRecords();
@@ -168,21 +177,33 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen font-mono text-gray-700">
+            <div
+                className={`flex items-center justify-center h-screen font-mono ${
+                    isDark ? 'bg-slate-900 text-gray-300' : 'bg-slate-100 text-gray-700'
+                }`}
+            >
                 Loading staff records...
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100">
+        <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
             {/* Header */}
-            <header className="bg-gray-900 border-b-4 border-gray-800 p-6 sticky top-0 z-20">
+            <header
+                className={`border-b-4 p-6 sticky top-0 z-20 ${
+                    isDark
+                        ? 'bg-gray-900 border-gray-800'
+                        : 'bg-white border-gray-300'
+                }`}
+            >
                 <div className="max-w-full mx-auto">
                     <div className="flex justify-between items-start gap-4 mb-6">
                         <div>
-                            <h1 className="text-3xl font-bold font-mono text-white">HR Staffing</h1>
-                            <p className="text-sm text-gray-400 font-mono mt-1">
+                            <h1 className={`text-3xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                HR Staffing
+                            </h1>
+                            <p className={`text-sm font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                                 Carroll Middle School – 360 · As of 04/10/2026
                             </p>
                         </div>
@@ -208,6 +229,17 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             >
                                 ⚙ Views
                             </button>
+                            <button
+                                onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                                className={`font-mono font-bold py-2 px-4 rounded-2px border-2 ${
+                                    isDark
+                                        ? 'bg-gray-800 hover:bg-gray-700 text-white border-gray-600'
+                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border-gray-300'
+                                }`}
+                                title="Toggle light/dark surrounding UI"
+                            >
+                                {isDark ? '☀ Light' : '🌙 Dark'}
+                            </button>
                         </div>
                     </div>
 
@@ -220,7 +252,11 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                                 placeholder="Search by name, position, pos no, emp no, last person, classroom..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full px-3 py-2 border-2 border-gray-600 rounded-2px font-mono text-sm bg-slate-800 text-slate-100 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                                className={`w-full px-3 py-2 border-2 rounded-2px font-mono text-sm focus:outline-none focus:border-blue-500 ${
+                                    isDark
+                                        ? 'border-gray-600 bg-slate-800 text-slate-100 placeholder-gray-500'
+                                        : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400'
+                                }`}
                             />
                         </div>
 
@@ -228,7 +264,11 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                         <select
                             value={currentView}
                             onChange={(e) => handleViewChange(e.target.value)}
-                            className="px-3 py-2 border-2 border-gray-600 rounded-2px font-mono text-sm bg-slate-800 text-slate-100 focus:outline-none focus:border-blue-500"
+                            className={`px-3 py-2 border-2 rounded-2px font-mono text-sm focus:outline-none focus:border-blue-500 ${
+                                isDark
+                                    ? 'border-gray-600 bg-slate-800 text-slate-100'
+                                    : 'border-gray-300 bg-white text-slate-900'
+                            }`}
                         >
                             {views.map((view) => (
                                 <option key={view.id} value={view.name}>
@@ -238,9 +278,15 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                         </select>
 
                         {/* Record Count */}
-                        <div className="bg-gray-800 border-2 border-gray-600 rounded-2px px-3 py-2 font-mono text-sm">
+                        <div
+                            className={`border-2 rounded-2px px-3 py-2 font-mono text-sm ${
+                                isDark
+                                    ? 'bg-gray-800 border-gray-600'
+                                    : 'bg-white border-gray-300'
+                            }`}
+                        >
                             <span className="font-bold text-blue-400">{records.length}</span>
-                            <span className="text-gray-400"> records</span>
+                            <span className={isDark ? 'text-gray-400' : 'text-gray-600'}> records</span>
                         </div>
                     </div>
 
@@ -248,15 +294,15 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                     <div className="flex gap-6 text-xs font-mono">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-300 rounded-2px" />
-                            <span className="text-gray-300">Contract = T/TR</span>
+                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Contract = T/TR</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded-2px" />
-                            <span className="text-gray-300">Pos End = 2026-06-30</span>
+                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Pos End = 2026-06-30</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded-2px" />
-                            <span className="text-gray-300">Pos Start = 2026-07-01</span>
+                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Pos Start = 2026-07-01</span>
                         </div>
                     </div>
                 </div>
