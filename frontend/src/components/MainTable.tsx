@@ -191,9 +191,9 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
             {/* Header */}
             <header
-                className={`border-b-4 p-6 sticky top-0 z-20 ${isDark
-                    ? 'bg-gray-900 border-gray-800'
-                    : 'bg-white border-gray-300'
+                className={`border-b-4 p-6 sticky top-0 inset-x-0 z-50 backdrop-blur-sm ${isDark
+                    ? 'bg-gray-900/95 border-gray-800'
+                    : 'bg-white/95 border-gray-300'
                     }`}
             >
                 <div className="max-w-full mx-auto">
