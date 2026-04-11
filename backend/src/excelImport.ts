@@ -102,11 +102,36 @@ function mapHeaderToColumn(header: string): string | null {
     return COLUMN_ALIASES[norm] ?? null;
 }
 
+// Columns that hold date values — used to detect and format date serials
+const DATE_COLUMNS = new Set([
+    'pos_start', 'pos_end', 'contract_end', 'expires',
+    'effective_date', 'contract_start_date', 'contract_end_date',
+]);
+
+function formatDate(val: any): string | null {
+    // Already a JS Date (from cellDates: true)
+    if (val instanceof Date && !isNaN(val.getTime())) {
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, '0');
+        const d = String(val.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    // Fallback: Excel serial number
+    if (typeof val === 'number' && val > 10000 && val < 200000) {
+        const epoch = new Date(Math.round((val - 25569) * 86400 * 1000));
+        const y = epoch.getUTCFullYear();
+        const m = String(epoch.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(epoch.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    return null;
+}
+
 export async function importExcelData(filePath: string): Promise<number> {
-    const workbook = XLSX.readFile(filePath);
+    // cellDates: true makes xlsx return JS Date objects for date cells automatically
+    const workbook = XLSX.readFile(filePath, { cellDates: true });
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    // Get raw data with header row
     const raw = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: null });
 
     if (raw.length === 0) {
@@ -114,7 +139,6 @@ export async function importExcelData(filePath: string): Promise<number> {
         return 0;
     }
 
-    // Log the actual headers from the Excel file for debugging
     const excelHeaders = Object.keys(raw[0]);
     console.log('[Import] Excel headers found:', excelHeaders);
 
@@ -138,23 +162,17 @@ export async function importExcelData(filePath: string): Promise<number> {
 
         for (const [excelHeader, dbCol] of Object.entries(headerMap)) {
             const val = row[excelHeader];
-            if (val !== null && val !== undefined && val !== '') {
-                // Convert Excel date serial numbers to strings
-                if (typeof val === 'number' && dbCol.includes('date') || dbCol === 'expires' || dbCol === 'pos_start' || dbCol === 'pos_end' || dbCol === 'contract_end') {
-                    // Check if it looks like an Excel date serial (large integer)
-                    if (val > 10000 && val < 100000) {
-                        const date = XLSX.SSF.parse_date_code(val);
-                        if (date) {
-                            record[dbCol] = `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
-                        } else {
-                            record[dbCol] = String(val);
-                        }
-                    } else {
-                        record[dbCol] = String(val);
-                    }
+            if (val === null || val === undefined || val === '') continue;
+
+            if (DATE_COLUMNS.has(dbCol)) {
+                const formatted = formatDate(val);
+                if (formatted) {
+                    record[dbCol] = formatted;
                 } else {
                     record[dbCol] = String(val);
                 }
+            } else {
+                record[dbCol] = String(val);
             }
         }
 

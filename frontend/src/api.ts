@@ -41,6 +41,7 @@ export const importApi = {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
     },
+    fixDates: () => api.post('/import/fix-dates'),
 };
 
 export default api;

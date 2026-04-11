@@ -10,11 +10,26 @@ interface ImportModalProps {
 export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalProps) {
     const [file, setFile] = useState<File | null>(null);
     const [isImporting, setIsImporting] = useState(false);
+    const [isFixing, setIsFixing] = useState(false);
     const [message, setMessage] = useState('');
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             setFile(e.target.files[0]);
+        }
+    };
+
+    const handleFixDates = async () => {
+        setIsFixing(true);
+        try {
+            const res = await importApi.fixDates();
+            setMessage(`✅ Fixed dates on ${res.data.recordsFixed} records!`);
+            onImportSuccess();
+        } catch (err) {
+            console.error('Fix dates failed:', err);
+            setMessage('❌ Fix dates failed');
+        } finally {
+            setIsFixing(false);
         }
     };
 
@@ -82,17 +97,25 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
                     </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={handleImport}
-                        disabled={!file || isImporting}
+                        disabled={!file || isImporting || isFixing}
                         className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
                     >
                         {isImporting ? 'Importing...' : 'Import'}
                     </button>
                     <button
+                        onClick={handleFixDates}
+                        disabled={isImporting || isFixing}
+                        title="Fix Excel date serial numbers (e.g. 46203) in already-imported records"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                    >
+                        {isFixing ? 'Fixing...' : 'Fix Dates'}
+                    </button>
+                    <button
                         onClick={onClose}
-                        disabled={isImporting}
+                        disabled={isImporting || isFixing}
                         className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
                     >
                         Cancel
