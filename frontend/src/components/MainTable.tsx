@@ -29,12 +29,12 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
 
     return (
         <div className="w-full">
-            {/* Top scrollbar (invisible, synced) */}
+            {/* Top scrollbar (visible, synced) */}
             <div
                 ref={topScrollRef}
                 onScroll={handleTopScroll}
-                className="overflow-x-auto w-full"
-                style={{ height: '8px', visibility: 'hidden' }}
+                className="overflow-x-auto w-full bg-gray-100 border-b-2 border-gray-300"
+                style={{ height: '12px' }}
             >
                 <div style={{ width: '100%', height: '1px' }} />
             </div>
