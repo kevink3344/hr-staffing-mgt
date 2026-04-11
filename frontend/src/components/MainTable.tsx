@@ -42,13 +42,13 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
                                     record
                                 )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
                             >
-                                <td className="border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-600 font-bold w-12">
+                                <td className="border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 font-bold w-12">
                                     {idx + 1}
                                 </td>
                                 {visibleColumns.map((col) => (
                                     <td
                                         key={`${record.id}-${col}`}
-                                        className={`border-r-2 border-gray-800 px-3 py-2 text-xs whitespace-nowrap overflow-hidden text-ellipsis max-w-96 ${getCellColorClass(
+                                        className={`border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis max-w-96 ${getCellColorClass(
                                             col,
                                             record
                                         )}`}
