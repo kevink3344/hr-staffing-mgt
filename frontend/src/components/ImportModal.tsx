@@ -89,7 +89,7 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
             />
 
             {/* Modal */}
-            <div className="relative bg-white rounded-2px border-2 border-gray-800 p-6 w-96 shadow-xl">
+            <div className="relative bg-white rounded-2px border-2 border-gray-800 p-6 w-full max-w-md shadow-xl">
                 <h2 className="text-xl font-bold font-mono mb-4 text-gray-900">
                     Import Excel Data
                 </h2>
@@ -118,11 +118,11 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
                     </div>
                 )}
 
-                <div className="flex gap-2 flex-wrap">
+                <div className="grid grid-cols-2 gap-2">
                     <button
                         onClick={handleImport}
                         disabled={!file || isImporting || isFixing || isDeleting}
-                        className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                        className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
                     >
                         {isImporting ? 'Importing...' : 'Import'}
                     </button>
@@ -130,7 +130,7 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
                         onClick={handleFixDates}
                         disabled={isImporting || isFixing || isDeleting}
                         title="Fix Excel date serial numbers (e.g. 46203) in already-imported records"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
                     >
                         {isFixing ? 'Fixing...' : 'Fix Dates'}
                     </button>
@@ -138,14 +138,14 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
                         onClick={handleDeleteAll}
                         disabled={isImporting || isFixing || isDeleting}
                         title="Delete all staff records (demo reset)"
-                        className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-red-800"
+                        className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-red-800"
                     >
                         {isDeleting ? 'Deleting...' : 'Delete All'}
                     </button>
                     <button
                         onClick={onClose}
                         disabled={isImporting || isFixing || isDeleting}
-                        className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
+                        className="bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
                     >
                         Cancel
                     </button>

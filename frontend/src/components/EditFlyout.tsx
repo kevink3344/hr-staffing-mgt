@@ -78,12 +78,12 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                 <div className="fixed inset-0 z-50">
                     {/* Overlay */}
                     <div
-                        className="absolute inset-0 bg-black bg-opacity-50"
+                        className="absolute inset-0 bg-black bg-opacity-50 z-40"
                         onClick={onClose}
                     />
 
                     {/* Panel - positioned on the right */}
-                    <div className="absolute top-0 right-0 w-96 h-full bg-white shadow-xl flex flex-col border-l-2 border-gray-800">
+                    <div className="absolute top-0 right-0 bottom-0 w-96 bg-white shadow-2xl flex flex-col border-l-2 border-gray-800 z-50">
                         {/* Header */}
                         <div className="bg-gray-900 text-white p-4 border-b-2 border-gray-800">
                             <h2 className="text-lg font-bold font-mono">{record.employee_name}</h2>
