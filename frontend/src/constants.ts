@@ -72,3 +72,21 @@ export interface StaffRecord {
     id: number;
     [key: string]: any;
 }
+
+export const EDITABLE_FIELDS = [
+    'last_person_name',
+    'last_person_no',
+    'effective_date',
+    'classroom_assign',
+    'pos_no_new',
+    'mos',
+    'emp_percent_new',
+    'track_new',
+    'pay_grade',
+    'step',
+    'contract_type',
+    'contract_start_date',
+    'contract_end_date',
+    'letter_needed',
+    'comments',
+] as const;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { staffApi, historyApi } from '../api';
-import { COLUMN_LABELS, StaffRecord } from '../constants';
+import { COLUMN_LABELS, EDITABLE_FIELDS, StaffRecord } from '../constants';
 
 interface EditFlyoutProps {
     record: StaffRecord | null;
@@ -51,23 +51,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         return null;
     }
 
-    const editableFields = [
-        'last_person_name',
-        'last_person_no',
-        'effective_date',
-        'classroom_assign',
-        'pos_no_new',
-        'mos',
-        'emp_percent_new',
-        'track_new',
-        'pay_grade',
-        'step',
-        'contract_type',
-        'contract_start_date',
-        'contract_end_date',
-        'letter_needed',
-        'comments',
-    ];
+    const editableFields = EDITABLE_FIELDS;
 
     return (
         <>
