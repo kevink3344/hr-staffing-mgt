@@ -3,6 +3,8 @@ import cors from 'cors';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUiExpress from 'swagger-ui-express';
 import { config } from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { initializeDatabase } from './database.js';
 import staffRoutes from './routes/staff.js';
 import historyRoutes from './routes/history.js';
@@ -204,6 +206,16 @@ app.use('/api/import', importRoutes);
 app.use('/api/filters', filtersRoutes);
 app.use('/api/pins', pinsRoutes);
 app.use('/api/comments', commentsRoutes);
+
+// Serve frontend static files in production
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+});
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
