@@ -222,7 +222,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         const changes: Record<string, { from: string | null; to: string | null }> = {};
         for (const [key, value] of Object.entries(req.body)) {
             if (key !== 'id' && original[key] !== value) {
-                changes[key] = { from: original[key] || null, to: value || null };
+                changes[key] = { from: (original[key] as string) || null, to: (value as string) || null };
             }
         }
 

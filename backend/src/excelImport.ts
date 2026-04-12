@@ -59,7 +59,7 @@ const COLUMN_ALIASES: Record<string, string> = {
     'lastperson': 'last_person_name',
     'lastpersonno': 'last_person_no',
     'lastpersonnumber': 'last_person_no',
-    'lastperson': 'last_person_no',
+    'lastpersonno2': 'last_person_no',
     'effectivedate': 'effective_date',
     'effective': 'effective_date',
     'classroomassign': 'classroom_assign',
