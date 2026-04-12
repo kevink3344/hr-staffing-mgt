@@ -1,11 +1,7 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "composite": true,
-    "jsx": "react-jsx",
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "composite": true
   },
-  "include": ["src"],
-  "references": []
+  "include": ["src"]
 }
