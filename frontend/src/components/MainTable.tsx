@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check, List, LayoutGrid } from 'lucide-react';
+import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check } from 'lucide-react';
 import { staffApi, viewsApi, filtersApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass } from '../utils';
@@ -96,124 +96,95 @@ interface ListTableProps {
 
 function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow }: ListTableProps) {
     const [activeRowId, setActiveRowId] = React.useState<number | null>(null);
-    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-    const topScrollRef = React.useRef<HTMLDivElement>(null);
-    const tableMinWidthPx = 112 + visibleColumns.length * 160; // 64 (actions) + 48 (row#)
-
-    const handleScroll = () => {
-        if (scrollContainerRef.current && topScrollRef.current) {
-            topScrollRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
-        }
-    };
-
-    const handleTopScroll = () => {
-        if (scrollContainerRef.current && topScrollRef.current) {
-            scrollContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-        }
-    };
 
     return (
         <div className="w-full">
-            <div
-                ref={topScrollRef}
-                onScroll={handleTopScroll}
-                className="overflow-x-auto w-full bg-gray-100 sticky top-0 z-20"
-                style={{ height: '14px' }}
-            >
-                <div style={{ width: `${tableMinWidthPx}px`, height: '1px' }} />
-            </div>
-            <div
-                ref={scrollContainerRef}
-                onScroll={handleScroll}
-                className="overflow-x-auto w-full"
-            >
-                <table className="w-full font-mono border-collapse">
-                    <thead className="bg-gray-900 text-white sticky z-10" style={{ top: '14px' }}>
-                        <tr className="border-b-2 border-gray-800">
-                            <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-16 min-w-16">
-                                ✓&nbsp;/&nbsp;✗
+            <table className="w-full font-mono border-collapse">
+                <thead className="bg-gray-900 text-white sticky top-0 z-10">
+                    <tr className="border-b-2 border-gray-800">
+                        <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-16 min-w-16">
+                            ✓&nbsp;/&nbsp;✗
+                        </th>
+                        <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                            #
+                        </th>
+                        {visibleColumns.map((col) => (
+                            <th
+                                key={col}
+                                className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
+                            >
+                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </th>
-                            <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
-                                #
-                            </th>
-                            {visibleColumns.map((col) => (
-                                <th
-                                    key={col}
-                                    className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
-                                >
-                                    {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {records.map((record, idx) => {
-                            const edits = rowEdits[record.id] || {};
-                            const isDirty = Object.keys(edits).length > 0;
-                            const isActive = activeRowId === record.id;
-                            return (
-                                <tr
-                                    key={record.id}
-                                    onClick={() => setActiveRowId(record.id)}
-                                    className={`${getRowColorClass(record)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
-                                >
-                                    <td className="border-r-2 border-gray-800 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center justify-center gap-1">
-                                            <button
-                                                onClick={() => { onSaveRow(record.id); setActiveRowId(null); }}
-                                                disabled={!isDirty}
-                                                title="Save changes"
-                                                className={`p-1 rounded-2px transition-colors ${isDirty
-                                                    ? 'text-green-600 hover:bg-green-100 cursor-pointer'
-                                                    : 'text-gray-300 cursor-default'
-                                                    }`}
-                                            >
-                                                <Check size={13} strokeWidth={2.5} />
-                                            </button>
-                                            <button
-                                                onClick={() => { onCancelRow(record.id); setActiveRowId(null); }}
-                                                disabled={!isActive && !isDirty}
-                                                title="Cancel / deselect"
-                                                className={`p-1 rounded-2px transition-colors ${(isActive || isDirty)
-                                                    ? 'text-red-500 hover:bg-red-100 cursor-pointer'
-                                                    : 'text-gray-300 cursor-default'
-                                                    }`}
-                                            >
-                                                <X size={13} strokeWidth={2.5} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'}`}>
-                                        {idx + 1}
-                                    </td>
-                                    {visibleColumns.map((col) => {
-                                        const isEditable = isActive && (EDITABLE_FIELDS as readonly string[]).includes(col);
-                                        const cellValue = edits[col] !== undefined ? edits[col] : (record[col] ?? '');
-                                        return (
-                                            <td
-                                                key={`${record.id}-${col}`}
-                                                className={`border-r-2 border-gray-800 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${getCellColorClass(col, record)}`}
-                                            >
-                                                {isEditable ? (
-                                                    <input
-                                                        type="text"
-                                                        value={cellValue}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        onChange={(e) => onCellChange(record.id, col, e.target.value)}
-                                                        className="w-full bg-transparent border-b border-blue-400 focus:outline-none focus:border-blue-600 font-mono text-xs text-gray-900 px-3 py-0"
-                                                    />
-                                                ) : (
-                                                    <span className="px-3 inline-block whitespace-nowrap overflow-hidden text-ellipsis">{record[col] || '—'}</span>
-                                                )}
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {records.map((record, idx) => {
+                        const edits = rowEdits[record.id] || {};
+                        const isDirty = Object.keys(edits).length > 0;
+                        const isActive = activeRowId === record.id;
+                        return (
+                            <tr
+                                key={record.id}
+                                onClick={() => setActiveRowId(record.id)}
+                                className={`${getRowColorClass(record)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
+                            >
+                                <td className="border-r-2 border-gray-800 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center justify-center gap-1">
+                                        <button
+                                            onClick={() => { onSaveRow(record.id); setActiveRowId(null); }}
+                                            disabled={!isDirty}
+                                            title="Save changes"
+                                            className={`p-1 rounded-2px transition-colors ${isDirty
+                                                ? 'text-green-600 hover:bg-green-100 cursor-pointer'
+                                                : 'text-gray-300 cursor-default'
+                                                }`}
+                                        >
+                                            <Check size={13} strokeWidth={2.5} />
+                                        </button>
+                                        <button
+                                            onClick={() => { onCancelRow(record.id); setActiveRowId(null); }}
+                                            disabled={!isActive && !isDirty}
+                                            title="Cancel / deselect"
+                                            className={`p-1 rounded-2px transition-colors ${(isActive || isDirty)
+                                                ? 'text-red-500 hover:bg-red-100 cursor-pointer'
+                                                : 'text-gray-300 cursor-default'
+                                                }`}
+                                        >
+                                            <X size={13} strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                </td>
+                                <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'}`}>
+                                    {idx + 1}
+                                </td>
+                                {visibleColumns.map((col) => {
+                                    const isEditable = isActive && (EDITABLE_FIELDS as readonly string[]).includes(col);
+                                    const cellValue = edits[col] !== undefined ? edits[col] : (record[col] ?? '');
+                                    return (
+                                        <td
+                                            key={`${record.id}-${col}`}
+                                            className={`border-r-2 border-gray-800 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${getCellColorClass(col, record)}`}
+                                        >
+                                            {isEditable ? (
+                                                <input
+                                                    type="text"
+                                                    value={cellValue}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    onChange={(e) => onCellChange(record.id, col, e.target.value)}
+                                                    className="w-full bg-transparent border-b border-blue-400 focus:outline-none focus:border-blue-600 font-mono text-xs text-gray-900 px-3 py-0"
+                                                />
+                                            ) : (
+                                                <span className="px-3 inline-block whitespace-nowrap overflow-hidden text-ellipsis">{record[col] || '—'}</span>
+                                            )}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
         </div>
     );
 }
@@ -226,84 +197,51 @@ interface DataTableProps {
 }
 
 function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
-    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-    const topScrollRef = React.useRef<HTMLDivElement>(null);
-    const tableMinWidthPx = 48 + visibleColumns.length * 160;
-
-    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        if (scrollContainerRef.current && topScrollRef.current) {
-            topScrollRef.current.scrollLeft = scrollContainerRef.current.scrollLeft;
-        }
-    };
-
-    const handleTopScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        if (scrollContainerRef.current && topScrollRef.current) {
-            scrollContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-        }
-    };
-
     return (
         <div className="w-full">
-            {/* Top scrollbar (visible, synced) */}
-            <div
-                ref={topScrollRef}
-                onScroll={handleTopScroll}
-                className="overflow-x-auto w-full bg-gray-100 sticky top-0 z-20"
-                style={{ height: '14px' }}
-            >
-                <div style={{ width: `${tableMinWidthPx}px`, height: '1px' }} />
-            </div>
-
-            {/* Main table with synchronized scroll */}
-            <div
-                ref={scrollContainerRef}
-                onScroll={handleScroll}
-                className="overflow-x-auto w-full"
-            >
-                <table className="w-full font-mono border-collapse">
-                    <thead className="bg-gray-900 text-white sticky z-10" style={{ top: '14px' }}>
-                        <tr className="border-b-2 border-gray-800">
-                            <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
-                                #
+            <table className="w-full font-mono border-collapse">
+                <thead className="bg-gray-900 text-white sticky top-0 z-10">
+                    <tr className="border-b-2 border-gray-800">
+                        <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                            #
+                        </th>
+                        {visibleColumns.map((col) => (
+                            <th
+                                key={col}
+                                className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
+                            >
+                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {records.map((record, idx) => (
+                        <tr
+                            key={record.id}
+                            onClick={() => onRowClick(record)}
+                            className={`${getRowColorClass(
+                                record
+                            )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
+                        >
+                            <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
+                                {idx + 1}
+                            </td>
                             {visibleColumns.map((col) => (
-                                <th
-                                    key={col}
-                                    className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
+                                <td
+                                    key={`${record.id}-${col}`}
+                                    className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${getCellColorClass(
+                                        col,
+                                        record
+                                    )}`}
                                 >
-                                    {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
-                                </th>
+                                    {record[col] || '—'}
+                                </td>
                             ))}
                         </tr>
-                    </thead>
-                    <tbody>
-                        {records.map((record, idx) => (
-                            <tr
-                                key={record.id}
-                                onClick={() => onRowClick(record)}
-                                className={`${getRowColorClass(
-                                    record
-                                )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
-                            >
-                                <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
-                                    {idx + 1}
-                                </td>
-                                {visibleColumns.map((col) => (
-                                    <td
-                                        key={`${record.id}-${col}`}
-                                        className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${getCellColorClass(
-                                            col,
-                                            record
-                                        )}`}
-                                    >
-                                        {record[col] || '—'}
-                                    </td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }
@@ -583,52 +521,49 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             />
                         </div>
 
-                        {/* View Selector – radio-style pill buttons */}
+                        {/* View Selector – pill buttons */}
                         <div className={`flex flex-wrap gap-1 border-2 rounded-2px p-1 ${isDark ? 'border-gray-600 bg-slate-800' : 'border-gray-300 bg-gray-100'}`}>
                             {views.map((view) => (
                                 <button
                                     key={view.id}
                                     onClick={() => handleViewChange(view.name)}
-                                    className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors whitespace-nowrap ${
-                                        currentView === view.name
-                                            ? 'bg-blue-600 text-white'
-                                            : isDark
-                                                ? 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                                    }`}
+                                    className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors whitespace-nowrap ${currentView === view.name
+                                        ? 'bg-blue-600 text-white'
+                                        : isDark
+                                            ? 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                                        }`}
                                 >
                                     {view.name}
                                 </button>
                             ))}
                         </div>
 
-                        {/* View Mode Toggle */}
-                        <div className={`flex border-2 rounded-2px overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                        {/* Inline / Panel toggle – pill buttons */}
+                        <div className={`flex gap-1 border-2 rounded-2px p-1 ${isDark ? 'border-gray-600 bg-slate-800' : 'border-gray-300 bg-gray-100'}`}>
                             <button
                                 onClick={() => setViewMode('list')}
-                                title="List view – inline editing"
-                                className={`px-3 py-2 text-xs font-mono font-bold flex items-center gap-1.5 transition-colors border-r-2 ${viewMode === 'list'
-                                    ? 'bg-blue-600 border-blue-700 text-white'
+                                title="Edit directly in the table"
+                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${viewMode === 'list'
+                                    ? 'bg-blue-600 text-white'
                                     : isDark
-                                        ? 'bg-slate-800 border-gray-600 text-gray-400 hover:text-gray-200'
-                                        : 'bg-white border-gray-300 text-gray-600 hover:text-gray-900'
+                                        ? 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                                     }`}
                             >
-                                <List size={14} />
-                                LIST
+                                Inline
                             </button>
                             <button
                                 onClick={() => setViewMode('grid')}
-                                title="Grid view – edit panel"
-                                className={`px-3 py-2 text-xs font-mono font-bold flex items-center gap-1.5 transition-colors ${viewMode === 'grid'
+                                title="Edit via side panel"
+                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${viewMode === 'grid'
                                     ? 'bg-blue-600 text-white'
                                     : isDark
-                                        ? 'bg-slate-800 text-gray-400 hover:text-gray-200'
-                                        : 'bg-white text-gray-600 hover:text-gray-900'
+                                        ? 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                                     }`}
                             >
-                                <LayoutGrid size={14} />
-                                GRID
+                                Panel
                             </button>
                         </div>
 
@@ -719,8 +654,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
             </header>
 
             {/* Table */}
-            <main className="flex-1 overflow-y-auto px-6 pb-6 pt-0">
-                <div className="bg-gray-100 rounded-2px border-2 border-gray-800 shadow-lg">
+            <main className="flex-1 flex flex-col min-h-0 px-6 pb-6 pt-0">
+                <div className="flex-1 min-h-0 overflow-auto bg-gray-100 rounded-2px border-2 border-gray-800 shadow-lg">
                     {viewMode === 'list' ? (
                         <ListTable
                             records={records}
