@@ -22,6 +22,7 @@ export const staffApi = {
 // History API
 export const historyApi = {
     getByRecordId: (recordId: number) => api.get(`/history/${recordId}`),
+    getActivityFeed: (limit = 50, offset = 0) => api.get('/history', { params: { limit, offset } }),
 };
 
 // Views API
@@ -43,6 +44,7 @@ export const importApi = {
         });
     },
     fixDates: () => api.post('/import/fix-dates'),
+    exportExcel: () => api.get('/import/export', { responseType: 'blob' }),
 };
 
 // Staff API (additional)
@@ -53,9 +55,9 @@ export const staffDeleteApi = {
 // Filters API
 export const filtersApi = {
     getAll: (createdBy?: string) => api.get('/filters', { params: { created_by: createdBy } }),
-    create: (column_name: string, column_value: string, filter_type: string = 'equals', row_color: string = '') =>
-        api.post('/filters', { column_name, column_value, filter_type, row_color }),
-    update: (id: number, data: { column_name: string; column_value: string; filter_type: string; row_color: string }) =>
+    create: (column_name: string, column_value: string[], filter_type: string = 'equals', row_color: string = '', highlight_type: string = 'row') =>
+        api.post('/filters', { column_name, column_value, filter_type, row_color, highlight_type }),
+    update: (id: number, data: { column_name: string; column_value: string[]; filter_type: string; row_color: string; highlight_type: string }) =>
         api.put(`/filters/${id}`, data),
     delete: (id: number) => api.delete(`/filters/${id}`),
     toggle: (id: number) => api.patch(`/filters/${id}/toggle`),
@@ -66,6 +68,13 @@ export const pinsApi = {
     getAll: (pinnedBy?: string) => api.get('/pins', { params: { pinned_by: pinnedBy } }),
     pin: (recordId: number) => api.post(`/pins/${recordId}`),
     unpin: (recordId: number) => api.delete(`/pins/${recordId}`),
+};
+
+// Comments API
+export const commentsApi = {
+    getByRecordId: (recordId: number) => api.get(`/comments/${recordId}`),
+    create: (recordId: number, message: string) => api.post(`/comments/${recordId}`, { message }),
+    delete: (id: number) => api.delete(`/comments/${id}`),
 };
 
 export default api;

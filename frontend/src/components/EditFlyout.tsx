@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { staffApi, historyApi } from '../api';
+import React, { useState, useEffect, useRef } from 'react';
+import { staffApi, historyApi, commentsApi } from '../api';
 import { COLUMN_LABELS, EDITABLE_FIELDS, StaffRecord } from '../constants';
 
 interface EditFlyoutProps {
@@ -10,15 +10,19 @@ interface EditFlyoutProps {
 }
 
 export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps) {
-    const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
+    const [activeTab, setActiveTab] = useState<'details' | 'history' | 'comments'>('details');
     const [formData, setFormData] = useState<any>(record || {});
     const [history, setHistory] = useState<any[]>([]);
+    const [comments, setComments] = useState<any[]>([]);
+    const [newMessage, setNewMessage] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const commentsEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (record) {
             setFormData(record);
             loadHistory(record.id);
+            loadComments(record.id);
         }
     }, [record]);
 
@@ -28,6 +32,36 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
             setHistory(res.data);
         } catch (err) {
             console.error('Failed to load history:', err);
+        }
+    };
+
+    const loadComments = async (recordId: number) => {
+        try {
+            const res = await commentsApi.getByRecordId(recordId);
+            setComments(res.data);
+            setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        } catch (err) {
+            console.error('Failed to load comments:', err);
+        }
+    };
+
+    const handleSendComment = async () => {
+        if (!newMessage.trim() || !record) return;
+        try {
+            await commentsApi.create(record.id, newMessage.trim());
+            setNewMessage('');
+            loadComments(record.id);
+        } catch (err) {
+            console.error('Failed to send comment:', err);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: number) => {
+        try {
+            await commentsApi.delete(commentId);
+            loadComments(record!.id);
+        } catch (err) {
+            console.error('Failed to delete comment:', err);
         }
     };
 
@@ -99,10 +133,24 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                             >
                                 History
                             </button>
+                            <button
+                                onClick={() => { setActiveTab('comments'); setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }}
+                                className={`flex-1 py-3 px-4 font-mono text-sm font-bold border-b-2 relative ${activeTab === 'comments'
+                                    ? 'bg-white border-blue-500 text-blue-700'
+                                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                                    }`}
+                            >
+                                Chat
+                                {comments.length > 0 && (
+                                    <span className="ml-1 bg-blue-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+                                        {comments.length}
+                                    </span>
+                                )}
+                            </button>
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-y-auto">
+                        <div className={`overflow-y-auto ${activeTab === 'comments' ? 'hidden' : 'flex-1'}`}>
                             {activeTab === 'details' ? (
                                 <div className="p-4 space-y-4">
                                     {/* Position name only */}
@@ -125,14 +173,25 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                 <label className="text-xs font-mono text-gray-600 block mb-1">
                                                     {COLUMN_LABELS[field as keyof typeof COLUMN_LABELS]}
                                                 </label>
-                                                <input
-                                                    type="text"
-                                                    value={formData[field] || ''}
-                                                    onChange={(e) =>
-                                                        setFormData({ ...formData, [field]: e.target.value })
-                                                    }
-                                                    className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
-                                                />
+                                                {field === 'comments' ? (
+                                                    <textarea
+                                                        rows={4}
+                                                        value={formData[field] || ''}
+                                                        onChange={(e) =>
+                                                            setFormData({ ...formData, [field]: e.target.value })
+                                                        }
+                                                        className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-y"
+                                                    />
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={formData[field] || ''}
+                                                        onChange={(e) =>
+                                                            setFormData({ ...formData, [field]: e.target.value })
+                                                        }
+                                                        className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                    />
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -153,7 +212,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                             {entry.changed_by}
                                                         </span>
                                                         <span className="text-xs text-gray-500 font-mono">
-                                                            {new Date(entry.created_at).toLocaleString()}
+                                                            {new Date(entry.created_at + 'Z').toLocaleString()}
                                                         </span>
                                                     </div>
                                                     <div className="space-y-1">
@@ -183,22 +242,83 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                             )}
                         </div>
 
-                        {/* Footer */}
-                        <div className="border-t-2 border-gray-800 p-4 bg-gray-100 flex gap-2">
-                            <button
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
-                            >
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </button>
-                            <button
-                                onClick={onClose}
-                                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
-                            >
-                                Cancel
-                            </button>
-                        </div>
+                        {/* Comments tab content */}
+                        {activeTab === 'comments' && (
+                            <>
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    {comments.length === 0 ? (
+                                        <p className="text-sm text-gray-500 font-mono text-center mt-8">No comments yet. Start the conversation!</p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {comments.map((c: any) => {
+                                                const currentUser = localStorage.getItem('userEmail') || 'demo@staffing.com';
+                                                const isOwn = c.author === currentUser;
+                                                return (
+                                                    <div key={c.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                                        <div className={`max-w-[80%] rounded-2px p-3 ${isOwn ? 'bg-blue-100 border-2 border-blue-300' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                                <span className="font-mono text-xs font-bold text-gray-700">{c.author}</span>
+                                                                {isOwn && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteComment(c.id)}
+                                                                        className="text-red-400 hover:text-red-600 text-xs font-bold"
+                                                                        title="Delete comment"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <p className="font-mono text-sm text-gray-900 whitespace-pre-wrap">{c.message}</p>
+                                                            <span className="font-mono text-[10px] text-gray-400 mt-1 block">
+                                                                {new Date(c.created_at + 'Z').toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            <div ref={commentsEndRef} />
+                                        </div>
+                                    )}
+                                </div>
+                                {/* Chat input */}
+                                <div className="border-t-2 border-gray-800 p-3 bg-gray-100 flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSendComment()}
+                                        placeholder="Type a message..."
+                                        className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                    />
+                                    <button
+                                        onClick={handleSendComment}
+                                        disabled={!newMessage.trim()}
+                                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                                    >
+                                        Send
+                                    </button>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Footer - only show Save/Cancel on details/history tabs */}
+                        {activeTab !== 'comments' && (
+                            <div className="border-t-2 border-gray-800 p-4 bg-gray-100 flex gap-2">
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving}
+                                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                                >
+                                    {isSaving ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -96,6 +96,27 @@ router.post('/headers', upload.single('file'), async (req: Request, res: Respons
     }
 });
 
+// Export staff records as Excel file
+router.get('/export', async (req: Request, res: Response) => {
+    try {
+        const db = await getDatabase();
+        const records = await db.all('SELECT * FROM staff_records ORDER BY id');
+
+        const ws = XLSX.utils.json_to_sheet(records);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Staff Records');
+
+        const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="staff-records-export.xlsx"');
+        res.send(buf);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to export data' });
+    }
+});
+
 // Fix existing records that have Excel date serials stored as strings (e.g. "46203")
 router.post('/fix-dates', async (req: Request, res: Response) => {
     try {

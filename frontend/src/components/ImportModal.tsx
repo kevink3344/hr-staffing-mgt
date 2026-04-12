@@ -10,7 +10,7 @@ interface ImportModalProps {
 export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalProps) {
     const [file, setFile] = useState<File | null>(null);
     const [isImporting, setIsImporting] = useState(false);
-    const [isFixing, setIsFixing] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -20,17 +20,24 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
         }
     };
 
-    const handleFixDates = async () => {
-        setIsFixing(true);
+    const handleExport = async () => {
+        setIsExporting(true);
         try {
-            const res = await importApi.fixDates();
-            setMessage(`✅ Fixed dates on ${res.data.recordsFixed} records!`);
-            onImportSuccess();
+            const res = await importApi.exportExcel();
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'staff-records-export.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            setMessage('✅ Export downloaded!');
         } catch (err) {
-            console.error('Fix dates failed:', err);
-            setMessage('❌ Fix dates failed');
+            console.error('Export failed:', err);
+            setMessage('❌ Export failed');
         } finally {
-            setIsFixing(false);
+            setIsExporting(false);
         }
     };
 
@@ -121,22 +128,22 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
                 <div className="grid grid-cols-2 gap-2">
                     <button
                         onClick={handleImport}
-                        disabled={!file || isImporting || isFixing || isDeleting}
+                        disabled={!file || isImporting || isExporting || isDeleting}
                         className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
                     >
                         {isImporting ? 'Importing...' : 'Import'}
                     </button>
                     <button
-                        onClick={handleFixDates}
-                        disabled={isImporting || isFixing || isDeleting}
-                        title="Fix Excel date serial numbers (e.g. 46203) in already-imported records"
+                        onClick={handleExport}
+                        disabled={isImporting || isExporting || isDeleting}
+                        title="Export all staff records to Excel"
                         className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
                     >
-                        {isFixing ? 'Fixing...' : 'Fix Dates'}
+                        {isExporting ? 'Exporting...' : 'Export'}
                     </button>
                     <button
                         onClick={handleDeleteAll}
-                        disabled={isImporting || isFixing || isDeleting}
+                        disabled={isImporting || isExporting || isDeleting}
                         title="Delete all staff records (demo reset)"
                         className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-red-800"
                     >
@@ -144,7 +151,7 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
                     </button>
                     <button
                         onClick={onClose}
-                        disabled={isImporting || isFixing || isDeleting}
+                        disabled={isImporting || isExporting || isDeleting}
                         className="bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
                     >
                         Cancel

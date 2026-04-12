@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check, Pin } from 'lucide-react';
+import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock } from 'lucide-react';
 import { staffApi, viewsApi, filtersApi, pinsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass } from '../utils';
 import { EditFlyout } from './EditFlyout';
 import { ImportModal } from './ImportModal';
+import { ActivityFeed } from './ActivityFeed';
 
 interface FilterChip {
     id?: number;  // set for DB-persisted filters, absent for legend toggles
     column: string;
     filter_type: string;
-    value: string;
+    value: string | string[];
     color?: string;
+    highlight_type?: string;  // 'row' (default) or 'cell'
 }
 
 // ── List Table (inline editing) ──────────────────────────────────────────────
@@ -109,7 +111,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     return (
                                         <td
                                             key={`${record.id}-${col}`}
-                                            className={`border-r-2 border-gray-800 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record)}`}
+                                            className={`border-r-2 border-gray-800 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)}`}
                                         >
                                             {isEditable ? (
                                                 <input
@@ -192,7 +194,8 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                     key={`${record.id}-${col}`}
                                     className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${getCellColorClass(
                                         col,
-                                        record
+                                        record,
+                                        activeFilters
                                     )}`}
                                 >
                                     {record[col] || '—'}
@@ -222,8 +225,10 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
     const [views, setViews] = useState<any[]>([]);
     const [visibleColumns, setVisibleColumns] = useState<string[]>(STAFF_COLUMNS);
     const [isImportOpen, setIsImportOpen] = useState(false);
+    const [isActivityOpen, setIsActivityOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState<FilterChip[]>([]);
     const [userFilters, setUserFilters] = useState<FilterChip[]>([]);
+    const [systemFilters, setSystemFilters] = useState<FilterChip[]>([]);
     const [activeUserFilterIds, setActiveUserFilterIds] = useState<Set<number>>(new Set());
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [rowEdits, setRowEdits] = useState<Record<number, Record<string, string>>>({});
@@ -280,19 +285,19 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
 
         const activeUserFilters = userFilters.filter(f => f.id && activeUserFilterIds.has(f.id));
         for (const f of [...activeFilters, ...activeUserFilters]) {
-            const val = f.value.toLowerCase();
+            const values = Array.isArray(f.value) ? f.value : [f.value];
             switch (f.filter_type) {
                 case 'contains':
-                    filtered = filtered.filter((record) => record[f.column]?.toLowerCase().includes(val));
+                    filtered = filtered.filter((record) => values.some(v => record[f.column]?.toLowerCase().includes(v.toLowerCase())));
                     break;
                 case 'does_not_equal':
-                    filtered = filtered.filter((record) => record[f.column]?.toLowerCase() !== val);
+                    filtered = filtered.filter((record) => values.every(v => record[f.column]?.toLowerCase() !== v.toLowerCase()));
                     break;
                 case 'does_not_contain':
-                    filtered = filtered.filter((record) => !record[f.column]?.toLowerCase().includes(val));
+                    filtered = filtered.filter((record) => values.every(v => !record[f.column]?.toLowerCase().includes(v.toLowerCase())));
                     break;
                 default: // equals
-                    filtered = filtered.filter((record) => record[f.column]?.toLowerCase() === val);
+                    filtered = filtered.filter((record) => values.some(v => record[f.column]?.toLowerCase() === v.toLowerCase()));
                     break;
             }
         }
@@ -353,15 +358,27 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
         try {
             const userEmail = localStorage.getItem('userEmail') || 'demo@staffing.com';
             const res = await filtersApi.getAll(userEmail);
-            const dbFilters: FilterChip[] = res.data
-                .filter((f: any) => f.is_active !== 0)
-                .map((f: any) => ({
+            const allFilters = res.data;
+            const mapFilter = (f: any): FilterChip => {
+                let parsedValue: string | string[];
+                try {
+                    parsedValue = JSON.parse(f.column_value);
+                } catch {
+                    parsedValue = [f.column_value];
+                }
+                return {
                     id: f.id,
                     column: f.column_name,
                     filter_type: f.filter_type || 'equals',
-                    value: f.column_value,
+                    value: parsedValue,
                     color: f.row_color || undefined,
-                }));
+                    highlight_type: f.highlight_type || 'row',
+                };
+            };
+            setSystemFilters(allFilters.filter((f: any) => f.is_system).map(mapFilter));
+            const dbFilters: FilterChip[] = allFilters
+                .filter((f: any) => !f.is_system && f.is_active !== 0)
+                .map(mapFilter);
             setUserFilters(dbFilters);
         } catch (err) {
             console.error('Failed to load saved filters:', err);
@@ -380,31 +397,22 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
         loadRecords();
     };
 
-    const toggleLegendFilter = (column: string, value: string) => {
-        // Legend filters are mutually exclusive — clicking an active one turns it off,
-        // clicking an inactive one removes all other legend filters first.
-        const legendFilters = [
-            { column: 'contract', value: 'T' },
-            { column: 'pos_end', value: '2026-06-30' },
-            { column: 'pos_start', value: '2026-07-01' },
-        ];
+    const toggleLegendFilter = (sf: FilterChip) => {
         setActiveFilters((prev) => {
-            const isActive = prev.some((f) => f.column === column && f.value === value);
+            const isActive = prev.some((f) => f.column === sf.column && JSON.stringify(f.value) === JSON.stringify(sf.value));
             const withoutLegend = prev.filter(
-                (f) => !legendFilters.some((l) => l.column === f.column && l.value === f.value)
+                (f) => !systemFilters.some((l) => l.column === f.column && JSON.stringify(l.value) === JSON.stringify(f.value))
             );
             if (isActive) return withoutLegend;
-            return [...withoutLegend, { column, value, filter_type: 'equals' }];
+            return [...withoutLegend, { column: sf.column, value: sf.value, filter_type: sf.filter_type }];
         });
-        // Also deactivate any active user filters when toggling a legend filter
         setActiveUserFilterIds(new Set());
     };
 
     const toggleUserFilter = (filterId: number) => {
-        // Mutually exclusive with legend filters and other user filters
-        setActiveFilters((prev) => prev.filter(f => ![
-            'contract', 'pos_end', 'pos_start'
-        ].some(col => f.column === col)));
+        setActiveFilters((prev) => prev.filter(f =>
+            !systemFilters.some(sf => sf.column === f.column && JSON.stringify(sf.value) === JSON.stringify(f.value))
+        ));
         setActiveUserFilterIds((prev) => {
             if (prev.has(filterId)) {
                 const next = new Set(prev);
@@ -416,14 +424,15 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
         });
     };
 
-    const isLegendActive = (column: string, value: string) =>
-        activeFilters.some((f) => f.column === column && f.value === value);
+    const isLegendActive = (sf: FilterChip) =>
+        activeFilters.some((f) => f.column === sf.column && JSON.stringify(f.value) === JSON.stringify(sf.value));
 
     const addFilter = async (filter: FilterChip) => {
         // Don't duplicate
-        if (activeFilters.some((f) => f.column === filter.column && f.value === filter.value)) return;
+        if (activeFilters.some((f) => f.column === filter.column && JSON.stringify(f.value) === JSON.stringify(filter.value))) return;
         try {
-            const res = await filtersApi.create(filter.column, filter.value, filter.filter_type);
+            const values = Array.isArray(filter.value) ? filter.value : [filter.value];
+            const res = await filtersApi.create(filter.column, values, filter.filter_type);
             setActiveFilters((prev) => [...prev, { id: res.data.id, column: filter.column, filter_type: filter.filter_type, value: filter.value }]);
         } catch (err) {
             console.error('Failed to save filter:', err);
@@ -532,6 +541,15 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                                 title="Import Excel data"
                             >
                                 <Download size={20} strokeWidth={2.5} />
+                            </button>
+                            <button
+                                onClick={() => setIsActivityOpen(true)}
+                                aria-label="Activity feed"
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-emerald-300 hover:text-emerald-200' : 'text-emerald-700 hover:text-emerald-600'
+                                    }`}
+                                title="Activity feed"
+                            >
+                                <Clock size={20} strokeWidth={2.5} />
                             </button>
                             <button
                                 onClick={loadRecords}
@@ -645,34 +663,29 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
 
                     {/* Legend chips + active filters + add button */}
                     <div className="flex flex-wrap gap-2 items-center">
-                        {/* Fixed legend chips (clickable toggles) */}
-                        <button
-                            onClick={() => toggleLegendFilter('contract', 'T')}
-                            className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${isLegendActive('contract', 'T')
-                                ? 'bg-yellow-300 border-yellow-500 text-yellow-900 font-bold'
-                                : isDark ? 'border-yellow-600 text-gray-300 hover:bg-yellow-900/30' : 'border-yellow-400 text-gray-700 hover:bg-yellow-50'}`}
-                        >
-                            <div className="w-3 h-3 bg-yellow-100 border border-yellow-400 rounded-2px" />
-                            Contract = T/TR
-                        </button>
-                        <button
-                            onClick={() => toggleLegendFilter('pos_end', '2026-06-30')}
-                            className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${isLegendActive('pos_end', '2026-06-30')
-                                ? 'bg-red-300 border-red-500 text-red-900 font-bold'
-                                : isDark ? 'border-red-600 text-gray-300 hover:bg-red-900/30' : 'border-red-400 text-gray-700 hover:bg-red-50'}`}
-                        >
-                            <div className="w-3 h-3 bg-red-100 border border-red-400 rounded-2px" />
-                            Pos End = 2026-06-30
-                        </button>
-                        <button
-                            onClick={() => toggleLegendFilter('pos_start', '2026-07-01')}
-                            className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${isLegendActive('pos_start', '2026-07-01')
-                                ? 'bg-green-300 border-green-500 text-green-900 font-bold'
-                                : isDark ? 'border-green-600 text-gray-300 hover:bg-green-900/30' : 'border-green-400 text-gray-700 hover:bg-green-50'}`}
-                        >
-                            <div className="w-3 h-3 bg-green-100 border border-green-400 rounded-2px" />
-                            Pos Start = 2026-07-01
-                        </button>
+                        {/* System filter legend chips (from DB) */}
+                        {systemFilters.map((sf, i) => {
+                            const active = isLegendActive(sf);
+                            const colorStyles: Record<string, { active: string; inactive: string; swatch: string }> = {
+                                yellow: { active: 'bg-yellow-300 border-yellow-500 text-yellow-900 font-bold', inactive: isDark ? 'border-yellow-600 text-gray-300 hover:bg-yellow-900/30' : 'border-yellow-400 text-gray-700 hover:bg-yellow-50', swatch: 'bg-yellow-100 border-yellow-400' },
+                                red: { active: 'bg-red-300 border-red-500 text-red-900 font-bold', inactive: isDark ? 'border-red-600 text-gray-300 hover:bg-red-900/30' : 'border-red-400 text-gray-700 hover:bg-red-50', swatch: 'bg-red-100 border-red-400' },
+                                green: { active: 'bg-green-300 border-green-500 text-green-900 font-bold', inactive: isDark ? 'border-green-600 text-gray-300 hover:bg-green-900/30' : 'border-green-400 text-gray-700 hover:bg-green-50', swatch: 'bg-green-100 border-green-400' },
+                                blue: { active: 'bg-blue-300 border-blue-500 text-blue-900 font-bold', inactive: isDark ? 'border-blue-600 text-gray-300 hover:bg-blue-900/30' : 'border-blue-400 text-gray-700 hover:bg-blue-50', swatch: 'bg-blue-100 border-blue-400' },
+                                purple: { active: 'bg-purple-300 border-purple-500 text-purple-900 font-bold', inactive: isDark ? 'border-purple-600 text-gray-300 hover:bg-purple-900/30' : 'border-purple-400 text-gray-700 hover:bg-purple-50', swatch: 'bg-purple-100 border-purple-400' },
+                                orange: { active: 'bg-orange-300 border-orange-500 text-orange-900 font-bold', inactive: isDark ? 'border-orange-600 text-gray-300 hover:bg-orange-900/30' : 'border-orange-400 text-gray-700 hover:bg-orange-50', swatch: 'bg-orange-100 border-orange-400' },
+                            };
+                            const cs = colorStyles[sf.color || 'blue'] || colorStyles.blue;
+                            return (
+                                <button
+                                    key={`sf-${i}`}
+                                    onClick={() => toggleLegendFilter(sf)}
+                                    className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${active ? cs.active : cs.inactive}`}
+                                >
+                                    <div className={`w-3 h-3 border rounded-2px ${cs.swatch}`} />
+                                    {COLUMN_LABELS[sf.column as keyof typeof COLUMN_LABELS] || sf.column} = {Array.isArray(sf.value) ? sf.value.join(' / ') : sf.value}
+                                </button>
+                            );
+                        })}
 
                         {/* Divider if there are custom active filters */}
                         {userFilters.length > 0 && (
@@ -690,7 +703,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                                         ? 'bg-blue-400 border-blue-500 text-blue-900'
                                         : isDark ? 'border-blue-600 text-gray-300 hover:bg-blue-900/30' : 'border-blue-400 text-gray-700 hover:bg-blue-50'}`}
                                 >
-                                    {COLUMN_LABELS[f.column as keyof typeof COLUMN_LABELS] || f.column} {f.filter_type === 'contains' ? '⊃' : f.filter_type === 'does_not_equal' ? '≠' : f.filter_type === 'does_not_contain' ? '⊅' : '='} {f.value}
+                                    {COLUMN_LABELS[f.column as keyof typeof COLUMN_LABELS] || f.column} {f.filter_type === 'contains' ? '⊃' : f.filter_type === 'does_not_equal' ? '≠' : f.filter_type === 'does_not_contain' ? '⊅' : '='} {Array.isArray(f.value) ? f.value.join(' / ') : f.value}
                                 </button>
                             );
                         })}
@@ -741,7 +754,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                             onCancelRow={handleListCancel}
                             pinnedIds={pinnedIds}
                             onTogglePin={togglePin}
-                            activeFilters={[...activeFilters, ...userFilters]}
+                            activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
                         />
                     ) : (
                         <DataTable
@@ -753,7 +766,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                             }}
                             pinnedIds={pinnedIds}
                             onTogglePin={togglePin}
-                            activeFilters={[...activeFilters, ...userFilters]}
+                            activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
                         />
                     )}
                 </div>
@@ -772,6 +785,20 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                 isOpen={isImportOpen}
                 onClose={() => setIsImportOpen(false)}
                 onImportSuccess={loadRecords}
+            />
+
+            {/* Activity Feed */}
+            <ActivityFeed
+                isOpen={isActivityOpen}
+                onClose={() => setIsActivityOpen(false)}
+                onRecordClick={(recordId) => {
+                    setIsActivityOpen(false);
+                    const rec = allRecords.find(r => r.id === recordId);
+                    if (rec) {
+                        setSelectedRecord(rec);
+                        setIsFlyoutOpen(true);
+                    }
+                }}
             />
         </div>
     );

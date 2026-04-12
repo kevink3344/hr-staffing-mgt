@@ -153,6 +153,36 @@ export async function initializeDatabase(): Promise<void> {
     if (!filterCols.some((c: any) => c.name === 'is_active')) {
         await database.exec("ALTER TABLE saved_filters ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
     }
+    if (!filterCols.some((c: any) => c.name === 'highlight_type')) {
+        await database.exec("ALTER TABLE saved_filters ADD COLUMN highlight_type TEXT NOT NULL DEFAULT 'row'");
+    }
+    if (!filterCols.some((c: any) => c.name === 'is_system')) {
+        await database.exec("ALTER TABLE saved_filters ADD COLUMN is_system INTEGER NOT NULL DEFAULT 0");
+    }
+
+    // Migrate existing single-value column_value to JSON array format
+    const allFilters = await database.all("SELECT id, column_value FROM saved_filters");
+    for (const f of allFilters) {
+        if (!f.column_value.startsWith('[')) {
+            await database.run('UPDATE saved_filters SET column_value = ? WHERE id = ?', [JSON.stringify([f.column_value]), f.id]);
+        }
+    }
+
+    // Seed system filters if none exist
+    const systemFilterCount = await database.get("SELECT COUNT(*) as count FROM saved_filters WHERE is_system = 1");
+    if (systemFilterCount.count === 0) {
+        const systemFilters = [
+            { column_name: 'contract', filter_type: 'equals', column_value: '["T","TR"]', row_color: 'yellow', highlight_type: 'row' },
+            { column_name: 'pos_end', filter_type: 'equals', column_value: '["2026-06-30"]', row_color: 'red', highlight_type: 'row' },
+            { column_name: 'pos_start', filter_type: 'equals', column_value: '["2026-07-01"]', row_color: 'green', highlight_type: 'cell' },
+        ];
+        for (const sf of systemFilters) {
+            await database.run(
+                'INSERT INTO saved_filters (column_name, filter_type, column_value, row_color, highlight_type, is_system, created_by) VALUES (?, ?, ?, ?, ?, 1, ?)',
+                [sf.column_name, sf.filter_type, sf.column_value, sf.row_color, sf.highlight_type, 'system']
+            );
+        }
+    }
 
     // Migration: add is_active column to saved_views if missing
     const viewCols = await database.all("PRAGMA table_info(saved_views)");
@@ -168,6 +198,18 @@ export async function initializeDatabase(): Promise<void> {
       pinned_by TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(record_id, pinned_by),
+      FOREIGN KEY (record_id) REFERENCES staff_records(id) ON DELETE CASCADE
+    )
+  `);
+
+    // RecordComments table (threaded comments per record)
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS record_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_id INTEGER NOT NULL,
+      author TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (record_id) REFERENCES staff_records(id) ON DELETE CASCADE
     )
   `);

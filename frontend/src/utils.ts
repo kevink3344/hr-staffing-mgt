@@ -10,31 +10,47 @@ const FILTER_ROW_COLORS: Record<string, { bg: string; hover: string }> = {
     rose: { bg: 'bg-rose-100', hover: 'hover:bg-rose-200' },
     lime: { bg: 'bg-lime-100', hover: 'hover:bg-lime-200' },
     amber: { bg: 'bg-amber-100', hover: 'hover:bg-amber-200' },
+    yellow: { bg: 'bg-yellow-100', hover: 'hover:bg-yellow-200' },
+    red: { bg: 'bg-red-100', hover: 'hover:bg-red-200' },
+    green: { bg: 'bg-green-200', hover: 'hover:bg-green-300' },
 };
 
 interface ActiveFilter {
     column: string;
     filter_type: string;
-    value: string;
+    value: string | string[];
     color?: string;
+    highlight_type?: string;
 }
 
-function recordMatchesFilter(record: any, f: ActiveFilter): boolean {
-    const recordVal = (record[f.column] || '').toLowerCase();
-    const filterVal = f.value.toLowerCase();
-    switch (f.filter_type) {
-        case 'contains': return recordVal.includes(filterVal);
-        case 'does_not_equal': return recordVal !== filterVal;
-        case 'does_not_contain': return !recordVal.includes(filterVal);
-        default: return recordVal === filterVal;
+function matchesSingleValue(recordVal: string, filterVal: string, filterType: string): boolean {
+    const rv = recordVal.toLowerCase();
+    const fv = filterVal.toLowerCase();
+    switch (filterType) {
+        case 'contains': return rv.includes(fv);
+        case 'does_not_equal': return rv !== fv;
+        case 'does_not_contain': return !rv.includes(fv);
+        default: return rv === fv;
     }
 }
 
+function recordMatchesFilter(record: any, f: ActiveFilter): boolean {
+    const recordVal = record[f.column] || '';
+    const values = Array.isArray(f.value) ? f.value : [f.value];
+    // For negative filters (does_not_equal/contain), ALL values must not match (AND)
+    // For positive filters (equals/contains), ANY value can match (OR)
+    if (f.filter_type === 'does_not_equal' || f.filter_type === 'does_not_contain') {
+        return values.every(v => matchesSingleValue(recordVal, v, f.filter_type));
+    }
+    return values.some(v => matchesSingleValue(recordVal, v, f.filter_type));
+}
+
 export function getRowColorClass(record: any, activeFilters?: ActiveFilter[]): string {
-    // Check user-defined colored filters first (last matching wins)
+    // Check user-defined colored filters first (last matching wins, skip cell-only)
     if (activeFilters) {
         for (let i = activeFilters.length - 1; i >= 0; i--) {
             const f = activeFilters[i];
+            if (f.highlight_type === 'cell') continue;
             if (f.color && FILTER_ROW_COLORS[f.color] && recordMatchesFilter(record, f)) {
                 const c = FILTER_ROW_COLORS[f.color];
                 return `${c.bg} ${c.hover} text-gray-900`;
@@ -42,26 +58,23 @@ export function getRowColorClass(record: any, activeFilters?: ActiveFilter[]): s
         }
     }
 
-    // Red for Pos End = 2026-06-30
-    if (record.pos_end === '2026-06-30') {
-        return 'bg-red-100 hover:bg-red-200 text-gray-900';
-    }
-
-    // Yellow for Contract = "T" or "TR"
-    if (record.contract === 'T' || record.contract === 'TR') {
-        return 'bg-yellow-100 hover:bg-yellow-200 text-gray-900';
-    }
-
     return 'bg-white hover:bg-gray-100 text-gray-900';
 }
 
 export function getCellColorClass(
     column: string,
-    record: any
+    record: any,
+    activeFilters?: ActiveFilter[]
 ): string {
-    // Green for Pos Start = 2026-07-01
-    if (column === 'pos_start' && record.pos_start === '2026-07-01') {
-        return 'bg-green-200 text-green-900 font-bold';
+    // Check cell-only user filters (last matching wins)
+    if (activeFilters) {
+        for (let i = activeFilters.length - 1; i >= 0; i--) {
+            const f = activeFilters[i];
+            if (f.highlight_type === 'cell' && f.column === column && f.color && FILTER_ROW_COLORS[f.color] && recordMatchesFilter(record, f)) {
+                const c = FILTER_ROW_COLORS[f.color];
+                return `${c.bg} text-gray-900 font-bold`;
+            }
+        }
     }
 
     return '';
