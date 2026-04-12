@@ -537,20 +537,17 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                 <div className="max-w-full mx-auto">
                     <div className="flex justify-between items-start gap-4 mb-6">
                         <div>
-                            <h1 className={`text-3xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                HR Staffing
-                            </h1>
-                            <p className={`text-sm font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            <h1 className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                 Carroll Middle School – 360 · As of 04/10/2026
-                            </p>
+                            </h1>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                                 aria-label="Toggle pinned only"
                                 className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl relative ${showPinnedOnly
-                                        ? 'text-amber-400'
-                                        : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                                    ? 'text-amber-400'
+                                    : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
                                     }`}
                                 title={showPinnedOnly ? 'Show all records' : 'Show pinned only'}
                             >
