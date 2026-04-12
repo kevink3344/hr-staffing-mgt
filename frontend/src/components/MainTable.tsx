@@ -230,7 +230,11 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
     const [userFilters, setUserFilters] = useState<FilterChip[]>([]);
     const [systemFilters, setSystemFilters] = useState<FilterChip[]>([]);
     const [activeUserFilterIds, setActiveUserFilterIds] = useState<Set<number>>(new Set());
-    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [viewMode, setViewModeRaw] = useState<'list' | 'grid'>(() => {
+        const saved = localStorage.getItem('viewMode');
+        return saved === 'grid' ? 'grid' : 'list';
+    });
+    const setViewMode = (mode: 'list' | 'grid') => { localStorage.setItem('viewMode', mode); setViewModeRaw(mode); };
     const [rowEdits, setRowEdits] = useState<Record<number, Record<string, string>>>({});
     const topScrollRef = React.useRef<HTMLDivElement>(null);
     const topInnerRef = React.useRef<HTMLDivElement>(null);
