@@ -42,6 +42,7 @@ interface FiltersPageProps {
 export function FiltersPage({ onBack }: FiltersPageProps) {
     const [filters, setFilters] = useState<any[]>([]);
     const [isCreating, setIsCreating] = useState(false);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [newColumn, setNewColumn] = useState(STAFF_COLUMNS[0]);
     const [newFilterType, setNewFilterType] = useState('equals');
     const [newValue, setNewValue] = useState('');
@@ -64,6 +65,24 @@ export function FiltersPage({ onBack }: FiltersPageProps) {
         }
     };
 
+    const resetForm = () => {
+        setIsCreating(false);
+        setEditingId(null);
+        setNewColumn(STAFF_COLUMNS[0]);
+        setNewFilterType('equals');
+        setNewValue('');
+        setNewColor(ROW_COLORS[0].value);
+    };
+
+    const handleEdit = (filter: any) => {
+        setEditingId(filter.id);
+        setIsCreating(true);
+        setNewColumn(filter.column_name);
+        setNewFilterType(filter.filter_type);
+        setNewValue(filter.column_value);
+        setNewColor(filter.row_color || ROW_COLORS[0].value);
+    };
+
     const handleSave = async () => {
         if (!newValue.trim()) {
             alert('Value is required');
@@ -71,13 +90,18 @@ export function FiltersPage({ onBack }: FiltersPageProps) {
         }
 
         try {
-            await filtersApi.create(newColumn, newValue.trim(), newFilterType, newColor);
+            if (editingId) {
+                await filtersApi.update(editingId, {
+                    column_name: newColumn,
+                    column_value: newValue.trim(),
+                    filter_type: newFilterType,
+                    row_color: newColor,
+                });
+            } else {
+                await filtersApi.create(newColumn, newValue.trim(), newFilterType, newColor);
+            }
             loadFilters();
-            setIsCreating(false);
-            setNewColumn(STAFF_COLUMNS[0]);
-            setNewFilterType('equals');
-            setNewValue('');
-            setNewColor(ROW_COLORS[0].value);
+            resetForm();
         } catch (err) {
             console.error('Failed to save filter:', err);
             alert('Failed to save filter');
@@ -179,7 +203,7 @@ export function FiltersPage({ onBack }: FiltersPageProps) {
 
                     {isCreating && (
                         <div className="bg-yellow-900 border-2 border-yellow-700 rounded-2px p-6 mb-6">
-                            <h3 className="font-bold text-lg mb-4 text-yellow-100">Create New Filter</h3>
+                            <h3 className="font-bold text-lg mb-4 text-yellow-100">{editingId ? 'Edit Filter' : 'Create New Filter'}</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                 <div>
@@ -248,16 +272,10 @@ export function FiltersPage({ onBack }: FiltersPageProps) {
                                     onClick={handleSave}
                                     className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-green-800"
                                 >
-                                    Save Filter
+                                    {editingId ? 'Update Filter' : 'Save Filter'}
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        setIsCreating(false);
-                                        setNewColumn(STAFF_COLUMNS[0]);
-                                        setNewFilterType('equals');
-                                        setNewValue('');
-                                        setNewColor(ROW_COLORS[0].value);
-                                    }}
+                                    onClick={resetForm}
                                     className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
                                 >
                                     Cancel
@@ -319,6 +337,12 @@ export function FiltersPage({ onBack }: FiltersPageProps) {
                                                     Inactive
                                                 </button>
                                             </div>
+                                            <button
+                                                onClick={() => handleEdit(filter)}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-blue-800 text-sm"
+                                            >
+                                                Edit
+                                            </button>
                                             <button
                                                 onClick={() => handleDelete(filter.id)}
                                                 className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-red-800 text-sm"

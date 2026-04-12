@@ -55,6 +55,8 @@ export const filtersApi = {
     getAll: (createdBy?: string) => api.get('/filters', { params: { created_by: createdBy } }),
     create: (column_name: string, column_value: string, filter_type: string = 'equals', row_color: string = '') =>
         api.post('/filters', { column_name, column_value, filter_type, row_color }),
+    update: (id: number, data: { column_name: string; column_value: string; filter_type: string; row_color: string }) =>
+        api.put(`/filters/${id}`, data),
     delete: (id: number) => api.delete(`/filters/${id}`),
     toggle: (id: number) => api.patch(`/filters/${id}/toggle`),
 };

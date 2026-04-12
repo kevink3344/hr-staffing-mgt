@@ -109,7 +109,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     return (
                                         <td
                                             key={`${record.id}-${col}`}
-                                            className={`border-r-2 border-gray-800 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${getCellColorClass(col, record)}`}
+                                            className={`border-r-2 border-gray-800 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record)}`}
                                         >
                                             {isEditable ? (
                                                 <input
@@ -117,7 +117,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                                     value={cellValue}
                                                     onClick={(e) => e.stopPropagation()}
                                                     onChange={(e) => onCellChange(record.id, col, e.target.value)}
-                                                    className="w-full bg-transparent border-b border-blue-400 focus:outline-none focus:border-blue-600 font-mono text-xs text-gray-900 px-3 py-0"
+                                                    className="w-full bg-transparent focus:outline-none font-mono text-xs text-gray-900 px-3 py-0"
                                                 />
                                             ) : (
                                                 <span className="px-3 inline-block whitespace-nowrap overflow-hidden text-ellipsis">{record[col] || '—'}</span>

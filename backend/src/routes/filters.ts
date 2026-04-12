@@ -121,6 +121,30 @@ router.post('/', async (req: Request, res: Response) => {
     }
 });
 
+router.put('/:id', async (req: Request, res: Response) => {
+    try {
+        const db = await getDatabase();
+        const { id } = req.params;
+        const { column_name, column_value, filter_type, row_color } = req.body;
+
+        if (!column_name || !column_value) {
+            return res.status(400).json({ error: 'column_name and column_value are required' });
+        }
+
+        const existing = await db.get('SELECT id FROM saved_filters WHERE id = ?', [id]);
+        if (!existing) return res.status(404).json({ error: 'Filter not found' });
+
+        await db.run(
+            'UPDATE saved_filters SET column_name = ?, column_value = ?, filter_type = ?, row_color = ? WHERE id = ?',
+            [column_name, column_value, filter_type || 'equals', row_color || '', id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update filter' });
+    }
+});
+
 /**
  * @swagger
  * /api/filters/{id}:
