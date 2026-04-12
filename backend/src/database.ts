@@ -140,6 +140,18 @@ export async function initializeDatabase(): Promise<void> {
     )
   `);
 
+    // PinnedRecords table (per-user pinned staff records)
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS pinned_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      record_id INTEGER NOT NULL,
+      pinned_by TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(record_id, pinned_by),
+      FOREIGN KEY (record_id) REFERENCES staff_records(id) ON DELETE CASCADE
+    )
+  `);
+
     console.log('✅ Database initialized');
 }
 

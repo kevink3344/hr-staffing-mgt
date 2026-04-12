@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check } from 'lucide-react';
-import { staffApi, viewsApi, filtersApi } from '../api';
+import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check, Pin } from 'lucide-react';
+import { staffApi, viewsApi, filtersApi, pinsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass } from '../utils';
 import { EditFlyout } from './EditFlyout';
@@ -92,9 +92,11 @@ interface ListTableProps {
     onCellChange: (recordId: number, field: string, value: string) => void;
     onSaveRow: (recordId: number) => void;
     onCancelRow: (recordId: number) => void;
+    pinnedIds: Set<number>;
+    onTogglePin: (recordId: number) => void;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin }: ListTableProps) {
     const [activeRowId, setActiveRowId] = React.useState<number | null>(null);
 
     return (
@@ -102,6 +104,9 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
                     <tr className="border-b-2 border-gray-800">
+                        <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
+                            <Pin size={12} />
+                        </th>
                         <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-16 min-w-16">
                             ✓&nbsp;/&nbsp;✗
                         </th>
@@ -129,6 +134,15 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 onClick={() => setActiveRowId(record.id)}
                                 className={`${getRowColorClass(record)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
+                                <td className="border-r-2 border-gray-800 px-2 py-1 w-10 min-w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        onClick={() => onTogglePin(record.id)}
+                                        title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
+                                        className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-amber-500' : 'text-gray-300 hover:text-gray-500'}`}
+                                    >
+                                        <Pin size={12} strokeWidth={2.5} fill={pinnedIds.has(record.id) ? 'currentColor' : 'none'} />
+                                    </button>
+                                </td>
                                 <td className="border-r-2 border-gray-800 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex items-center justify-center gap-1">
                                         <button
@@ -194,14 +208,19 @@ interface DataTableProps {
     records: StaffRecord[];
     visibleColumns: string[];
     onRowClick: (record: StaffRecord) => void;
+    pinnedIds: Set<number>;
+    onTogglePin: (recordId: number) => void;
 }
 
-function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin }: DataTableProps) {
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
                     <tr className="border-b-2 border-gray-800">
+                        <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
+                            <Pin size={12} />
+                        </th>
                         <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
                             #
                         </th>
@@ -224,6 +243,15 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
                                 record
                             )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
                         >
+                            <td className={`border-r-2 border-gray-800 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
+                                <button
+                                    onClick={() => onTogglePin(record.id)}
+                                    title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
+                                    className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-amber-500' : 'text-gray-300 hover:text-gray-500'}`}
+                                >
+                                    <Pin size={12} strokeWidth={2.5} fill={pinnedIds.has(record.id) ? 'currentColor' : 'none'} />
+                                </button>
+                            </td>
                             <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
                                 {idx + 1}
                             </td>
@@ -268,6 +296,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     const topScrollRef = React.useRef<HTMLDivElement>(null);
     const topInnerRef = React.useRef<HTMLDivElement>(null);
     const tableContainerRef = React.useRef<HTMLDivElement>(null);
+    const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
+    const [showPinnedOnly, setShowPinnedOnly] = useState(false);
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const saved = localStorage.getItem('mainUiTheme');
         return saved === 'light' ? 'light' : 'dark';
@@ -294,6 +324,7 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         loadRecords();
         loadViews();
         loadSavedFilters();
+        loadPins();
     }, []);
 
     useEffect(() => {
@@ -319,8 +350,12 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
             );
         }
 
+        if (showPinnedOnly) {
+            filtered = filtered.filter((r) => pinnedIds.has(r.id));
+        }
+
         setRecords(filtered);
-    }, [searchTerm, activeFilters, allRecords]);
+    }, [searchTerm, activeFilters, allRecords, showPinnedOnly, pinnedIds]);
 
     const loadRecords = async () => {
         try {
@@ -341,6 +376,29 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
             setViews(res.data);
         } catch (err) {
             console.error('Failed to load views:', err);
+        }
+    };
+
+    const loadPins = async () => {
+        try {
+            const res = await pinsApi.getAll();
+            setPinnedIds(new Set(res.data));
+        } catch (err) {
+            console.error('Failed to load pins:', err);
+        }
+    };
+
+    const togglePin = async (recordId: number) => {
+        try {
+            if (pinnedIds.has(recordId)) {
+                await pinsApi.unpin(recordId);
+                setPinnedIds((prev) => { const next = new Set(prev); next.delete(recordId); return next; });
+            } else {
+                await pinsApi.pin(recordId);
+                setPinnedIds((prev) => new Set(prev).add(recordId));
+            }
+        } catch (err) {
+            console.error('Failed to toggle pin:', err);
         }
     };
 
@@ -372,11 +430,23 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     };
 
     const toggleLegendFilter = (column: string, value: string) => {
+        // Legend filters are mutually exclusive — clicking an active one turns it off,
+        // clicking an inactive one removes all other legend filters first.
+        const legendFilters = [
+            { column: 'contract', value: 'T' },
+            { column: 'pos_end', value: '2026-06-30' },
+            { column: 'pos_start', value: '2026-07-01' },
+        ];
         setActiveFilters((prev) => {
-            const exists = prev.some((f) => f.column === column && f.value === value);
-            return exists
-                ? prev.filter((f) => !(f.column === column && f.value === value))
-                : [...prev, { column, value }];
+            const isActive = prev.some((f) => f.column === column && f.value === value);
+            // Strip all legend filters from the current set
+            const withoutLegend = prev.filter(
+                (f) => !legendFilters.some((l) => l.column === f.column && l.value === f.value)
+            );
+            // If it was already active, just turn it off (return without adding it back)
+            if (isActive) return withoutLegend;
+            // Otherwise activate only this one
+            return [...withoutLegend, { column, value }];
         });
     };
 
@@ -475,6 +545,22 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             </p>
                         </div>
                         <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowPinnedOnly(!showPinnedOnly)}
+                                aria-label="Toggle pinned only"
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl relative ${showPinnedOnly
+                                        ? 'text-amber-400'
+                                        : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                title={showPinnedOnly ? 'Show all records' : 'Show pinned only'}
+                            >
+                                <Pin size={20} strokeWidth={2.5} fill={showPinnedOnly ? 'currentColor' : 'none'} />
+                                {pinnedIds.size > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                        {pinnedIds.size}
+                                    </span>
+                                )}
+                            </button>
                             <button
                                 onClick={() => setIsImportOpen(true)}
                                 aria-label="Import Excel data"
@@ -700,6 +786,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             onCellChange={handleListCellChange}
                             onSaveRow={handleListSave}
                             onCancelRow={handleListCancel}
+                            pinnedIds={pinnedIds}
+                            onTogglePin={togglePin}
                         />
                     ) : (
                         <DataTable
@@ -709,6 +797,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                                 setSelectedRecord(record);
                                 setIsFlyoutOpen(true);
                             }}
+                            pinnedIds={pinnedIds}
+                            onTogglePin={togglePin}
                         />
                     )}
                 </div>

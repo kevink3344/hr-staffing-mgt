@@ -56,4 +56,11 @@ export const filtersApi = {
     delete: (id: number) => api.delete(`/filters/${id}`),
 };
 
+// Pins API
+export const pinsApi = {
+    getAll: (pinnedBy?: string) => api.get('/pins', { params: { pinned_by: pinnedBy } }),
+    pin: (recordId: number) => api.post(`/pins/${recordId}`),
+    unpin: (recordId: number) => api.delete(`/pins/${recordId}`),
+};
+
 export default api;
