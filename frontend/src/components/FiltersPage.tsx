@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { filtersApi } from '../api';
 import { STAFF_COLUMNS, COLUMN_LABELS } from '../constants';
 
@@ -47,7 +47,7 @@ export function FiltersPage({ onBack }: FiltersPageProps) {
     const [filters, setFilters] = useState<any[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [newColumn, setNewColumn] = useState(STAFF_COLUMNS[0]);
+    const [newColumn, setNewColumn] = useState<string>(STAFF_COLUMNS[0]);
     const [newFilterType, setNewFilterType] = useState('equals');
     const [newValues, setNewValues] = useState<string[]>(['']);
     const [newColor, setNewColor] = useState(ROW_COLORS[0].value);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { staffApi, historyApi, commentsApi } from '../api';
 import { COLUMN_LABELS, EDITABLE_FIELDS, StaffRecord } from '../constants';
 

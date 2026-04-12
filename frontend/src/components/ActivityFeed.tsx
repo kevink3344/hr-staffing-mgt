@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { historyApi } from '../api';
 import { COLUMN_LABELS } from '../constants';

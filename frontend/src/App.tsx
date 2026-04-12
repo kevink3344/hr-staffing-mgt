@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { MainTable } from './components/MainTable'
 import { ViewsPage } from './components/ViewsPage'
 import { FiltersPage } from './components/FiltersPage'

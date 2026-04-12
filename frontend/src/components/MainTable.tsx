@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock } from 'lucide-react';
 import { staffApi, viewsApi, filtersApi, pinsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
@@ -30,7 +30,7 @@ interface ListTableProps {
 }
 
 function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters }: ListTableProps) {
-    const [activeRowId, setActiveRowId] = React.useState<number | null>(null);
+    const [activeRowId, setActiveRowId] = useState<number | null>(null);
 
     return (
         <div className="w-full">
@@ -223,7 +223,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
     const [searchTerm, setSearchTerm] = useState('');
     const [currentView, setCurrentView] = useState('All Column View');
     const [views, setViews] = useState<any[]>([]);
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(STAFF_COLUMNS);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>([...STAFF_COLUMNS]);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [isActivityOpen, setIsActivityOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState<FilterChip[]>([]);
@@ -236,9 +236,9 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
     });
     const setViewMode = (mode: 'list' | 'grid') => { localStorage.setItem('viewMode', mode); setViewModeRaw(mode); };
     const [rowEdits, setRowEdits] = useState<Record<number, Record<string, string>>>({});
-    const topScrollRef = React.useRef<HTMLDivElement>(null);
-    const topInnerRef = React.useRef<HTMLDivElement>(null);
-    const tableContainerRef = React.useRef<HTMLDivElement>(null);
+    const topScrollRef = useRef<HTMLDivElement>(null);
+    const topInnerRef = useRef<HTMLDivElement>(null);
+    const tableContainerRef = useRef<HTMLDivElement>(null);
     const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
     const [showPinnedOnly, setShowPinnedOnly] = useState(false);
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -430,30 +430,6 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
 
     const isLegendActive = (sf: FilterChip) =>
         activeFilters.some((f) => f.column === sf.column && JSON.stringify(f.value) === JSON.stringify(sf.value));
-
-    const addFilter = async (filter: FilterChip) => {
-        // Don't duplicate
-        if (activeFilters.some((f) => f.column === filter.column && JSON.stringify(f.value) === JSON.stringify(filter.value))) return;
-        try {
-            const values = Array.isArray(filter.value) ? filter.value : [filter.value];
-            const res = await filtersApi.create(filter.column, values, filter.filter_type);
-            setActiveFilters((prev) => [...prev, { id: res.data.id, column: filter.column, filter_type: filter.filter_type, value: filter.value }]);
-        } catch (err) {
-            console.error('Failed to save filter:', err);
-        }
-    };
-
-    const removeFilter = async (index: number) => {
-        const filter = activeFilters[index];
-        if (filter.id) {
-            try {
-                await filtersApi.delete(filter.id);
-            } catch (err) {
-                console.error('Failed to delete filter:', err);
-            }
-        }
-        setActiveFilters((prev) => prev.filter((_, i) => i !== index));
-    };
 
     const handleListCellChange = (recordId: number, field: string, value: string) => {
         setRowEdits((prev) => ({

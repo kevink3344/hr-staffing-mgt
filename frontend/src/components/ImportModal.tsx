@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { importApi } from '../api';
 
 interface ImportModalProps {
@@ -14,7 +14,7 @@ export function ImportModal({ isOpen, onClose, onImportSuccess }: ImportModalPro
     const [isDeleting, setIsDeleting] = useState(false);
     const [message, setMessage] = useState('');
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             setFile(e.target.files[0]);
         }
