@@ -129,6 +129,17 @@ export async function initializeDatabase(): Promise<void> {
         }
     }
 
+    // SavedFilters table (persistent filter chips per user)
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS saved_filters (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      column_name TEXT NOT NULL,
+      column_value TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
     console.log('✅ Database initialized');
 }
 

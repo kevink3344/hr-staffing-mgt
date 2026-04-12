@@ -8,6 +8,7 @@ import staffRoutes from './routes/staff.js';
 import historyRoutes from './routes/history.js';
 import viewsRoutes from './routes/views.js';
 import importRoutes from './routes/import.js';
+import filtersRoutes from './routes/filters.js';
 
 config();
 
@@ -68,6 +69,7 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/views', viewsRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/filters', filtersRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -49,4 +49,11 @@ export const staffDeleteApi = {
     deleteAll: () => api.delete('/staff/all'),
 };
 
+// Filters API
+export const filtersApi = {
+    getAll: (createdBy?: string) => api.get('/filters', { params: { created_by: createdBy } }),
+    create: (column_name: string, column_value: string) => api.post('/filters', { column_name, column_value }),
+    delete: (id: number) => api.delete(`/filters/${id}`),
+};
+
 export default api;

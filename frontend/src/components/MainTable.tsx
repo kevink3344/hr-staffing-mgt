@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X } from 'lucide-react';
-import { staffApi, viewsApi } from '../api';
+import { staffApi, viewsApi, filtersApi } from '../api';
 import { STAFF_COLUMNS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass } from '../utils';
 import { EditFlyout } from './EditFlyout';
 import { ImportModal } from './ImportModal';
 
 interface FilterChip {
+    id?: number;  // set for DB-persisted filters, absent for legend toggles
     column: string;
     value: string;
 }
@@ -202,6 +203,7 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     useEffect(() => {
         loadRecords();
         loadViews();
+        loadSavedFilters();
     }, []);
 
     useEffect(() => {
@@ -251,6 +253,21 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         }
     };
 
+    const loadSavedFilters = async () => {
+        try {
+            const userEmail = localStorage.getItem('userEmail') || 'demo@staffing.com';
+            const res = await filtersApi.getAll(userEmail);
+            const dbFilters: FilterChip[] = res.data.map((f: any) => ({
+                id: f.id,
+                column: f.column_name,
+                value: f.column_value,
+            }));
+            setActiveFilters(dbFilters);
+        } catch (err) {
+            console.error('Failed to load saved filters:', err);
+        }
+    };
+
     const handleViewChange = (viewName: string) => {
         setCurrentView(viewName);
         const view = views.find((v) => v.name === viewName);
@@ -275,14 +292,26 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     const isLegendActive = (column: string, value: string) =>
         activeFilters.some((f) => f.column === column && f.value === value);
 
-    const addFilter = (filter: FilterChip) => {
-        setActiveFilters((prev) => {
-            const exists = prev.some((f) => f.column === filter.column && f.value === filter.value);
-            return exists ? prev : [...prev, filter];
-        });
+    const addFilter = async (filter: FilterChip) => {
+        // Don't duplicate
+        if (activeFilters.some((f) => f.column === filter.column && f.value === filter.value)) return;
+        try {
+            const res = await filtersApi.create(filter.column, filter.value);
+            setActiveFilters((prev) => [...prev, { id: res.data.id, column: filter.column, value: filter.value }]);
+        } catch (err) {
+            console.error('Failed to save filter:', err);
+        }
     };
 
-    const removeFilter = (index: number) => {
+    const removeFilter = async (index: number) => {
+        const filter = activeFilters[index];
+        if (filter.id) {
+            try {
+                await filtersApi.delete(filter.id);
+            } catch (err) {
+                console.error('Failed to delete filter:', err);
+            }
+        }
         setActiveFilters((prev) => prev.filter((_, i) => i !== index));
     };
 
