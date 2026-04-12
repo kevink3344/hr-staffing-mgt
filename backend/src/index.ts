@@ -157,7 +157,7 @@ app.get('/api-docs', swaggerUiExpress.setup(swaggerSpec));
  * @swagger
  * /:
  *   get:
- *     summary: Health check endpoint
+ *     summary: API info
  *     responses:
  *       200:
  *         description: Server is running
@@ -168,6 +168,30 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         apiDocs: '/api-docs'
     });
+});
+
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check
+ *     description: Returns ok if the API server is up and running.
+ *     tags:
+ *       - Health
+ *     responses:
+ *       200:
+ *         description: Server is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ok
+ */
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
 });
 
 // Routes

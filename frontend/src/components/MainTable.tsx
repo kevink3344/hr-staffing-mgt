@@ -108,12 +108,12 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
     };
 
     return (
-        <div className="w-full pt-3">
+        <div className="w-full">
             {/* Top scrollbar (visible, synced) */}
             <div
                 ref={topScrollRef}
                 onScroll={handleTopScroll}
-                className="overflow-x-auto w-full bg-gray-100 border-b-2 border-gray-300 sticky top-0 z-20"
+                className="overflow-x-auto w-full bg-gray-100 sticky top-0 z-20"
                 style={{ height: '14px' }}
             >
                 <div style={{ width: `${tableMinWidthPx}px`, height: '1px' }} />
@@ -125,8 +125,8 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
                 onScroll={handleScroll}
                 className="overflow-x-auto w-full"
             >
-                <table className="w-full font-mono border-collapse border-2 border-gray-800">
-                    <thead className="bg-gray-900 text-white sticky z-10" style={{ top: '12px' }}>
+                <table className="w-full font-mono border-collapse">
+                    <thead className="bg-gray-900 text-white sticky z-10" style={{ top: '14px' }}>
                         <tr className="border-b-2 border-gray-800">
                             <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
                                 #
@@ -218,7 +218,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                     record.pos_no?.toLowerCase().includes(term) ||
                     record.emp_no?.toLowerCase().includes(term) ||
                     record.last_person_name?.toLowerCase().includes(term) ||
-                    record.classroom_assign?.toLowerCase().includes(term)
+                    record.classroom_assign?.toLowerCase().includes(term) ||
+                    record.classroom_teaching_assignment?.toLowerCase().includes(term)
             );
         }
 
@@ -510,8 +511,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
             </header>
 
             {/* Table */}
-            <main className="flex-1 overflow-y-auto p-6">
-                <div className="bg-white rounded-2px border-2 border-gray-800 overflow-x-auto shadow-lg">
+            <main className="flex-1 overflow-y-auto px-6 pb-6 pt-0">
+                <div className="bg-gray-100 rounded-2px border-2 border-gray-800 shadow-lg">
                     <DataTable
                         records={records}
                         visibleColumns={visibleColumns}

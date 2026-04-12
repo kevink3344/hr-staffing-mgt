@@ -147,7 +147,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                     onChange={(e) =>
                                                         setFormData({ ...formData, [field]: e.target.value })
                                                     }
-                                                    className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm focus:outline-none focus:border-blue-500"
+                                                    className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
                                                 />
                                             </div>
                                         ))}
