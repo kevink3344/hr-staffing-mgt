@@ -265,6 +265,9 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [rowEdits, setRowEdits] = useState<Record<number, Record<string, string>>>({});
+    const topScrollRef = React.useRef<HTMLDivElement>(null);
+    const topInnerRef = React.useRef<HTMLDivElement>(null);
+    const tableContainerRef = React.useRef<HTMLDivElement>(null);
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const saved = localStorage.getItem('mainUiTheme');
         return saved === 'light' ? 'light' : 'dark';
@@ -274,6 +277,18 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     useEffect(() => {
         localStorage.setItem('mainUiTheme', theme);
     }, [theme]);
+
+    // Sync the top scrollbar ghost width with actual table scroll width
+    useEffect(() => {
+        const container = tableContainerRef.current;
+        const inner = topInnerRef.current;
+        if (!container || !inner) return;
+        const sync = () => { inner.style.width = container.scrollWidth + 'px'; };
+        sync();
+        const ro = new ResizeObserver(sync);
+        ro.observe(container);
+        return () => ro.disconnect();
+    }, [visibleColumns, viewMode]);
 
     useEffect(() => {
         loadRecords();
@@ -655,7 +670,28 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
 
             {/* Table */}
             <main className="flex-1 flex flex-col min-h-0 px-6 pb-6 pt-0">
-                <div className="flex-1 min-h-0 overflow-auto bg-gray-100 rounded-2px border-2 border-gray-800 shadow-lg">
+                {/* Top scrollbar – synced with main container */}
+                <div
+                    ref={topScrollRef}
+                    onScroll={() => {
+                        if (tableContainerRef.current && topScrollRef.current) {
+                            tableContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+                        }
+                    }}
+                    className="overflow-x-auto bg-gray-100 rounded-t-2px border-2 border-b-0 border-gray-800 shrink-0"
+                    style={{ height: '17px' }}
+                >
+                    <div ref={topInnerRef} style={{ height: '1px' }} />
+                </div>
+                <div
+                    ref={tableContainerRef}
+                    onScroll={() => {
+                        if (topScrollRef.current && tableContainerRef.current) {
+                            topScrollRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
+                        }
+                    }}
+                    className="flex-1 min-h-0 overflow-auto bg-gray-100 rounded-b-2px border-2 border-t-0 border-gray-800 shadow-lg"
+                >
                     {viewMode === 'list' ? (
                         <ListTable
                             records={records}
