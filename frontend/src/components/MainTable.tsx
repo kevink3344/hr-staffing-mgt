@@ -1,10 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { Download, RefreshCw, Settings2, Sun, Moon } from 'lucide-react';
+import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X } from 'lucide-react';
 import { staffApi, viewsApi } from '../api';
 import { STAFF_COLUMNS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass } from '../utils';
 import { EditFlyout } from './EditFlyout';
 import { ImportModal } from './ImportModal';
+
+interface FilterChip {
+    column: string;
+    value: string;
+}
+
+// ── Filter Builder Modal ──────────────────────────────────────────────────────
+interface FilterBuilderProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (filter: FilterChip) => void;
+    isDark: boolean;
+}
+
+function FilterBuilder({ isOpen, onClose, onSave, isDark }: FilterBuilderProps) {
+    const [column, setColumn] = useState(STAFF_COLUMNS[0]);
+    const [value, setValue] = useState('');
+
+    if (!isOpen) return null;
+
+    const handleSave = () => {
+        if (!value.trim()) return;
+        onSave({ column, value: value.trim() });
+        setValue('');
+        setColumn(STAFF_COLUMNS[0]);
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className={`w-96 rounded-2px border-2 p-6 font-mono shadow-xl ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold">Add Filter</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold mb-1 text-gray-400 uppercase">Column</label>
+                        <select
+                            value={column}
+                            onChange={(e) => setColumn(e.target.value)}
+                            className={`w-full px-3 py-2 border-2 rounded-2px text-sm focus:outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                        >
+                            {STAFF_COLUMNS.map((col) => (
+                                <option key={col} value={col}>
+                                    {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold mb-1 text-gray-400 uppercase">Value</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. T, 2026-06-30, ..."
+                            value={value}
+                            onChange={(e) => setValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                            className={`w-full px-3 py-2 border-2 rounded-2px text-sm focus:outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                        />
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2">
+                        <button onClick={onClose} className={`px-4 py-2 text-sm border-2 rounded-2px font-bold ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-600 hover:bg-gray-100'}`}>
+                            Cancel
+                        </button>
+                        <button onClick={handleSave} disabled={!value.trim()} className="px-4 py-2 text-sm border-2 rounded-2px font-bold bg-blue-600 border-blue-600 text-white hover:bg-blue-500 disabled:opacity-40">
+                            Apply Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 interface DataTableProps {
     records: StaffRecord[];
@@ -35,7 +112,7 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
             <div
                 ref={topScrollRef}
                 onScroll={handleTopScroll}
-                className="overflow-x-auto w-full bg-gray-100 border-b-2 border-gray-300"
+                className="overflow-x-auto w-full bg-gray-100 border-b-2 border-gray-300 sticky top-0 z-20"
                 style={{ height: '12px' }}
             >
                 <div style={{ width: `${tableMinWidthPx}px`, height: '1px' }} />
@@ -48,7 +125,7 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
                 className="overflow-x-auto w-full"
             >
                 <table className="w-full font-mono border-collapse border-2 border-gray-800">
-                    <thead className="bg-gray-900 text-white sticky top-0 z-10">
+                    <thead className="bg-gray-900 text-white sticky z-10" style={{ top: '12px' }}>
                         <tr className="border-b-2 border-gray-800">
                             <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
                                 #
@@ -110,6 +187,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     const [views, setViews] = useState<any[]>([]);
     const [visibleColumns, setVisibleColumns] = useState<string[]>(STAFF_COLUMNS);
     const [isImportOpen, setIsImportOpen] = useState(false);
+    const [activeFilters, setActiveFilters] = useState<FilterChip[]>([]);
+    const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false);
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const saved = localStorage.getItem('mainUiTheme');
         return saved === 'light' ? 'light' : 'dark';
@@ -126,21 +205,29 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     }, []);
 
     useEffect(() => {
+        let filtered = allRecords;
+
         if (searchTerm) {
-            const filtered = allRecords.filter(
+            const term = searchTerm.toLowerCase();
+            filtered = filtered.filter(
                 (record) =>
-                    record.employee_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    record.position_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    record.pos_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    record.emp_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    record.last_person_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    record.classroom_assign?.toLowerCase().includes(searchTerm.toLowerCase())
+                    record.employee_name?.toLowerCase().includes(term) ||
+                    record.position_name?.toLowerCase().includes(term) ||
+                    record.pos_no?.toLowerCase().includes(term) ||
+                    record.emp_no?.toLowerCase().includes(term) ||
+                    record.last_person_name?.toLowerCase().includes(term) ||
+                    record.classroom_assign?.toLowerCase().includes(term)
             );
-            setRecords(filtered);
-        } else {
-            setRecords(allRecords);
         }
-    }, [searchTerm, allRecords]);
+
+        for (const f of activeFilters) {
+            filtered = filtered.filter(
+                (record) => record[f.column]?.toLowerCase() === f.value.toLowerCase()
+            );
+        }
+
+        setRecords(filtered);
+    }, [searchTerm, activeFilters, allRecords]);
 
     const loadRecords = async () => {
         try {
@@ -176,6 +263,29 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         loadRecords();
     };
 
+    const toggleLegendFilter = (column: string, value: string) => {
+        setActiveFilters((prev) => {
+            const exists = prev.some((f) => f.column === column && f.value === value);
+            return exists
+                ? prev.filter((f) => !(f.column === column && f.value === value))
+                : [...prev, { column, value }];
+        });
+    };
+
+    const isLegendActive = (column: string, value: string) =>
+        activeFilters.some((f) => f.column === column && f.value === value);
+
+    const addFilter = (filter: FilterChip) => {
+        setActiveFilters((prev) => {
+            const exists = prev.some((f) => f.column === filter.column && f.value === filter.value);
+            return exists ? prev : [...prev, filter];
+        });
+    };
+
+    const removeFilter = (index: number) => {
+        setActiveFilters((prev) => prev.filter((_, i) => i !== index));
+    };
+
     if (isLoading) {
         return (
             <div
@@ -188,12 +298,12 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     }
 
     return (
-        <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
+        <div className={`h-screen flex flex-col ${isDark ? 'bg-slate-900 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
             {/* Header */}
             <header
-                className={`border-b-4 p-6 sticky top-0 inset-x-0 z-50 backdrop-blur-sm ${isDark
-                    ? 'bg-gray-900/95 border-gray-800'
-                    : 'bg-white/95 border-gray-300'
+                className={`border-b-4 p-6 shrink-0 ${isDark
+                    ? 'bg-gray-900 border-gray-800'
+                    : 'bg-white border-gray-300'
                     }`}
             >
                 <div className="max-w-full mx-auto">
@@ -296,26 +406,82 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                         </div>
                     </div>
 
-                    {/* Legend */}
-                    <div className="flex gap-6 text-xs font-mono">
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-300 rounded-2px" />
-                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Contract = T/TR</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded-2px" />
-                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Pos End = 2026-06-30</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded-2px" />
-                            <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Pos Start = 2026-07-01</span>
-                        </div>
+                    {/* Legend chips + active filters + add button */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {/* Fixed legend chips (clickable toggles) */}
+                        <button
+                            onClick={() => toggleLegendFilter('contract', 'T')}
+                            className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${isLegendActive('contract', 'T')
+                                ? 'bg-yellow-300 border-yellow-500 text-yellow-900 font-bold'
+                                : isDark ? 'border-yellow-600 text-gray-300 hover:bg-yellow-900/30' : 'border-yellow-400 text-gray-700 hover:bg-yellow-50'}`}
+                        >
+                            <div className="w-3 h-3 bg-yellow-100 border border-yellow-400 rounded-2px" />
+                            Contract = T/TR
+                        </button>
+                        <button
+                            onClick={() => toggleLegendFilter('pos_end', '2026-06-30')}
+                            className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${isLegendActive('pos_end', '2026-06-30')
+                                ? 'bg-red-300 border-red-500 text-red-900 font-bold'
+                                : isDark ? 'border-red-600 text-gray-300 hover:bg-red-900/30' : 'border-red-400 text-gray-700 hover:bg-red-50'}`}
+                        >
+                            <div className="w-3 h-3 bg-red-100 border border-red-400 rounded-2px" />
+                            Pos End = 2026-06-30
+                        </button>
+                        <button
+                            onClick={() => toggleLegendFilter('pos_start', '2026-07-01')}
+                            className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${isLegendActive('pos_start', '2026-07-01')
+                                ? 'bg-green-300 border-green-500 text-green-900 font-bold'
+                                : isDark ? 'border-green-600 text-gray-300 hover:bg-green-900/30' : 'border-green-400 text-gray-700 hover:bg-green-50'}`}
+                        >
+                            <div className="w-3 h-3 bg-green-100 border border-green-400 rounded-2px" />
+                            Pos Start = 2026-07-01
+                        </button>
+
+                        {/* Divider if there are custom active filters */}
+                        {activeFilters.filter(f => !(
+                            (f.column === 'contract' && f.value === 'T') ||
+                            (f.column === 'pos_end' && f.value === '2026-06-30') ||
+                            (f.column === 'pos_start' && f.value === '2026-07-01')
+                        )).length > 0 && (
+                                <span className={`text-xs ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
+                            )}
+
+                        {/* Custom filter chips */}
+                        {activeFilters
+                            .filter(f => !(
+                                (f.column === 'contract' && f.value === 'T') ||
+                                (f.column === 'pos_end' && f.value === '2026-06-30') ||
+                                (f.column === 'pos_start' && f.value === '2026-07-01')
+                            ))
+                            .map((f, i) => (
+                                <span
+                                    key={i}
+                                    className={`flex items-center gap-1 text-xs font-mono px-2 py-1 border-2 rounded-2px font-bold ${isDark ? 'bg-blue-900/50 border-blue-600 text-blue-200' : 'bg-blue-50 border-blue-400 text-blue-800'}`}
+                                >
+                                    {COLUMN_LABELS[f.column as keyof typeof COLUMN_LABELS] || f.column} = {f.value}
+                                    <button
+                                        onClick={() => removeFilter(activeFilters.indexOf(f))}
+                                        className="ml-1 opacity-60 hover:opacity-100"
+                                    >
+                                        <X size={10} />
+                                    </button>
+                                </span>
+                            ))}
+
+                        {/* Add filter button */}
+                        <button
+                            onClick={() => setIsFilterBuilderOpen(true)}
+                            title="Add filter"
+                            className={`flex items-center justify-center w-6 h-6 border-2 rounded-2px font-bold transition-colors ${isDark ? 'border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400' : 'border-gray-400 text-gray-500 hover:border-blue-500 hover:text-blue-600'}`}
+                        >
+                            <Plus size={12} />
+                        </button>
                     </div>
                 </div>
             </header>
 
             {/* Table */}
-            <main className="p-6">
+            <main className="flex-1 overflow-y-auto p-6">
                 <div className="bg-white rounded-2px border-2 border-gray-800 overflow-x-auto shadow-lg">
                     <DataTable
                         records={records}
@@ -341,6 +507,14 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                 isOpen={isImportOpen}
                 onClose={() => setIsImportOpen(false)}
                 onImportSuccess={loadRecords}
+            />
+
+            {/* Filter Builder Modal */}
+            <FilterBuilder
+                isOpen={isFilterBuilderOpen}
+                onClose={() => setIsFilterBuilderOpen(false)}
+                onSave={addFilter}
+                isDark={isDark}
             />
         </div>
     );

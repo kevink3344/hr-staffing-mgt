@@ -156,8 +156,9 @@ export async function importExcelData(filePath: string): Promise<number> {
 
     const db = await getDatabase();
     let importedCount = 0;
+    let skippedCount = 0;
 
-    for (const row of raw) {
+    for (const [rowIdx, row] of raw.entries()) {
         const record: Record<string, any> = {};
 
         for (const [excelHeader, dbCol] of Object.entries(headerMap)) {
@@ -172,19 +173,19 @@ export async function importExcelData(filePath: string): Promise<number> {
                     record[dbCol] = String(val);
                 }
             } else {
-                record[dbCol] = String(val);
+                record[dbCol] = String(val).trim();
             }
         }
 
-        // Must have at least a name to insert
-        const hasName = record.employee_name || record.emp_no || record.position_name;
-        if (!hasName) continue;
-
-        // Use employee_name from any available name-like field
-        if (!record.employee_name && record.emp_no) {
-            console.log('[Import] Skipping row with no employee_name:', record);
+        // Require at least a Pos No. to consider a row valid
+        if (!record.pos_no) {
+            console.log(`[Import] Row ${rowIdx + 2} skipped — no pos_no. Row keys: ${Object.keys(record).join(', ') || '(empty)'}`);
+            skippedCount++;
             continue;
         }
+
+        // Ensure employee_name is never undefined (schema allows NULL now)
+        if (!record.employee_name) record.employee_name = '';
 
         try {
             const cols = STAFF_RECORD_COLUMNS.filter(c => record[c] !== undefined);
@@ -200,6 +201,6 @@ export async function importExcelData(filePath: string): Promise<number> {
         }
     }
 
-    console.log(`[Import] Imported ${importedCount} of ${raw.length} rows`);
+    console.log(`[Import] Done: ${importedCount} imported, ${skippedCount} skipped (no pos_no), ${raw.length} total rows`);
     return importedCount;
 }

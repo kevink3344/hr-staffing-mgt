@@ -27,7 +27,7 @@ export async function initializeDatabase(): Promise<void> {
     await database.exec(`
     CREATE TABLE IF NOT EXISTS staff_records (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      employee_name TEXT NOT NULL,
+      employee_name TEXT,
       emp_no TEXT,
       contract_renewal_yr TEXT,
       contract TEXT,
