@@ -108,13 +108,13 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
     };
 
     return (
-        <div className="w-full pt-1">
+        <div className="w-full pt-3">
             {/* Top scrollbar (visible, synced) */}
             <div
                 ref={topScrollRef}
                 onScroll={handleTopScroll}
                 className="overflow-x-auto w-full bg-gray-100 border-b-2 border-gray-300 sticky top-0 z-20"
-                style={{ height: '12px' }}
+                style={{ height: '14px' }}
             >
                 <div style={{ width: `${tableMinWidthPx}px`, height: '1px' }} />
             </div>
@@ -150,13 +150,13 @@ function DataTable({ records, visibleColumns, onRowClick }: DataTableProps) {
                                     record
                                 )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
                             >
-                                <td className="border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 font-bold w-12 min-w-12">
+                                <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
                                     {idx + 1}
                                 </td>
                                 {visibleColumns.map((col) => (
                                     <td
                                         key={`${record.id}-${col}`}
-                                        className={`border-r-2 border-gray-800 px-3 py-2 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${getCellColorClass(
+                                        className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${getCellColorClass(
                                             col,
                                             record
                                         )}`}

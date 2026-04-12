@@ -26,7 +26,7 @@ const swaggerOptions = {
         info: {
             title: 'HR Staffing Management API',
             version: '1.0.0',
-            description: 'API documentation for HR Staffing Management System',
+            description: 'API for managing school HR staffing records, saved views, persistent filters, import, and audit history.',
             contact: {
                 name: 'HR Team',
                 email: 'hr@staffing.com',
@@ -38,6 +38,112 @@ const swaggerOptions = {
                 description: 'Development server',
             },
         ],
+        components: {
+            securitySchemes: {
+                userEmail: {
+                    type: 'apiKey',
+                    in: 'header',
+                    name: 'x-user-email',
+                    description: 'User email for change tracking and data ownership',
+                },
+            },
+            schemas: {
+                StaffRecord: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', readOnly: true },
+                        employee_name: { type: 'string', nullable: true },
+                        emp_no: { type: 'string', nullable: true },
+                        contract_renewal_yr: { type: 'string', nullable: true },
+                        contract: { type: 'string', nullable: true },
+                        contract_end: { type: 'string', nullable: true },
+                        emp_percent: { type: 'string', nullable: true },
+                        pos_start: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
+                        pos_end: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
+                        pos_no: { type: 'string', nullable: true },
+                        account_code: { type: 'string', nullable: true },
+                        license_type: { type: 'string', nullable: true },
+                        expires: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
+                        position_name: { type: 'string', nullable: true },
+                        classroom_teaching_assignment: { type: 'string', nullable: true },
+                        mo_available: { type: 'string', nullable: true },
+                        mo_used: { type: 'string', nullable: true },
+                        track: { type: 'string', nullable: true },
+                        last_person_name: { type: 'string', nullable: true },
+                        last_person_no: { type: 'string', nullable: true },
+                        effective_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
+                        classroom_assign: { type: 'string', nullable: true },
+                        pos_no_new: { type: 'string', nullable: true },
+                        mos: { type: 'string', nullable: true },
+                        emp_percent_new: { type: 'string', nullable: true },
+                        track_new: { type: 'string', nullable: true },
+                        pay_grade: { type: 'string', nullable: true },
+                        step: { type: 'string', nullable: true },
+                        contract_type: { type: 'string', nullable: true },
+                        contract_start_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
+                        contract_end_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
+                        letter_needed: { type: 'string', nullable: true },
+                        comments: { type: 'string', nullable: true },
+                        created_at: { type: 'string', format: 'date-time', readOnly: true },
+                        updated_at: { type: 'string', format: 'date-time', readOnly: true },
+                    },
+                },
+                SavedView: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', readOnly: true },
+                        name: { type: 'string' },
+                        column_keys: { type: 'array', items: { type: 'string' } },
+                        created_by: { type: 'string' },
+                        is_system: { type: 'integer', enum: [0, 1] },
+                        created_at: { type: 'string', format: 'date-time', readOnly: true },
+                        updated_at: { type: 'string', format: 'date-time', readOnly: true },
+                    },
+                },
+                SavedFilter: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', readOnly: true },
+                        column_name: { type: 'string', description: 'DB column key, e.g. contract, pos_end' },
+                        column_value: { type: 'string', description: 'Value to filter by (exact match)' },
+                        created_by: { type: 'string' },
+                        created_at: { type: 'string', format: 'date-time', readOnly: true },
+                    },
+                },
+                HistoryEntry: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', readOnly: true },
+                        record_id: { type: 'integer' },
+                        changed_by: { type: 'string' },
+                        changes: {
+                            type: 'object',
+                            description: 'Map of field name to {from, to} pair',
+                            additionalProperties: {
+                                type: 'object',
+                                properties: {
+                                    from: { type: 'string', nullable: true },
+                                    to: { type: 'string', nullable: true },
+                                },
+                            },
+                        },
+                        created_at: { type: 'string', format: 'date-time', readOnly: true },
+                    },
+                },
+                Error: {
+                    type: 'object',
+                    properties: {
+                        error: { type: 'string' },
+                    },
+                },
+                SuccessResponse: {
+                    type: 'object',
+                    properties: {
+                        success: { type: 'boolean' },
+                    },
+                },
+            },
+        },
     },
     apis: ['./src/routes/*.ts'],
 };

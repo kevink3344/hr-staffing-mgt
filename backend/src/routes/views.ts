@@ -19,12 +19,25 @@ const router = express.Router();
  *     parameters:
  *       - name: created_by
  *         in: query
- *         description: User email to filter user-created views
+ *         description: User email to include user-created views
  *         schema:
  *           type: string
+ *           example: demo@staffing.com
  *     responses:
  *       200:
  *         description: Array of views
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/SavedView'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/', async (req: Request, res: Response) => {
     try {
@@ -67,18 +80,44 @@ router.get('/', async (req: Request, res: Response) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [name, column_keys, created_by]
  *             properties:
  *               name:
  *                 type: string
+ *                 example: My Custom View
  *               column_keys:
  *                 type: array
  *                 items:
  *                   type: string
+ *                 example: [employee_name, pos_no, contract]
  *               created_by:
  *                 type: string
+ *                 example: demo@staffing.com
  *     responses:
  *       201:
  *         description: Created view
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SavedView'
+ *       400:
+ *         description: Missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: View name already exists for this user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/', async (req: Request, res: Response) => {
     try {
@@ -116,7 +155,7 @@ router.post('/', async (req: Request, res: Response) => {
  * /api/views/{id}:
  *   put:
  *     tags: [Views]
- *     summary: Update a saved view
+ *     summary: Update a saved view (cannot update system views)
  *     parameters:
  *       - name: id
  *         in: path
@@ -129,9 +168,44 @@ router.post('/', async (req: Request, res: Response) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               column_keys:
+ *                 type: array
+ *                 items:
+ *                   type: string
  *     responses:
  *       200:
  *         description: Updated view
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SavedView'
+ *       400:
+ *         description: No fields to update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Cannot edit system views
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: View not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.put('/:id', async (req: Request, res: Response) => {
     try {
@@ -185,7 +259,7 @@ router.put('/:id', async (req: Request, res: Response) => {
  * /api/views/{id}:
  *   delete:
  *     tags: [Views]
- *     summary: Delete a saved view
+ *     summary: Delete a saved view (cannot delete system views)
  *     parameters:
  *       - name: id
  *         in: path
@@ -194,7 +268,29 @@ router.put('/:id', async (req: Request, res: Response) => {
  *           type: integer
  *     responses:
  *       200:
- *         description: Deletion successful
+ *         description: View deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       403:
+ *         description: Cannot delete system views
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: View not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete('/:id', async (req: Request, res: Response) => {
     try {

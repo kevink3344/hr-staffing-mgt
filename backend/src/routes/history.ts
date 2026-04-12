@@ -24,7 +24,19 @@ const router = express.Router();
  *           type: integer
  *     responses:
  *       200:
- *         description: Array of history entries
+ *         description: Array of history entries (newest first)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/HistoryEntry'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/:recordId', async (req: Request, res: Response) => {
     try {

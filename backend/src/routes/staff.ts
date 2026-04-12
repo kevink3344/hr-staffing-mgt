@@ -26,6 +26,18 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Array of staff records
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/StaffRecord'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/', async (req: Request, res: Response) => {
     try {
@@ -71,6 +83,22 @@ router.get('/', async (req: Request, res: Response) => {
  *     responses:
  *       200:
  *         description: Staff record
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StaffRecord'
+ *       404:
+ *         description: Record not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/:id', async (req: Request, res: Response) => {
     try {
@@ -95,15 +123,27 @@ router.get('/:id', async (req: Request, res: Response) => {
  *   post:
  *     tags: [Staff Records]
  *     summary: Create a new staff record
+ *     security:
+ *       - userEmail: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
+ *             $ref: '#/components/schemas/StaffRecord'
  *     responses:
  *       201:
  *         description: Created record
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StaffRecord'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/', async (req: Request, res: Response) => {
     try {
@@ -131,7 +171,9 @@ router.post('/', async (req: Request, res: Response) => {
  * /api/staff/{id}:
  *   put:
  *     tags: [Staff Records]
- *     summary: Update a staff record
+ *     summary: Update a staff record (tracks changes to audit history)
+ *     security:
+ *       - userEmail: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -143,10 +185,26 @@ router.post('/', async (req: Request, res: Response) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
+ *             $ref: '#/components/schemas/StaffRecord'
  *     responses:
  *       200:
  *         description: Updated record
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StaffRecord'
+ *       404:
+ *         description: Record not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.put('/:id', async (req: Request, res: Response) => {
     try {
@@ -199,10 +257,26 @@ router.put('/:id', async (req: Request, res: Response) => {
  * /api/staff/all:
  *   delete:
  *     tags: [Staff Records]
- *     summary: Delete all staff records (demo purposes)
+ *     summary: Delete ALL staff records (demo reset)
  *     responses:
  *       200:
- *         description: Deletion successful
+ *         description: All records deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 deleted:
+ *                   type: integer
+ *                   description: Number of rows deleted
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete('/all', async (req: Request, res: Response) => {
     try {
@@ -220,7 +294,7 @@ router.delete('/all', async (req: Request, res: Response) => {
  * /api/staff/{id}:
  *   delete:
  *     tags: [Staff Records]
- *     summary: Delete a staff record
+ *     summary: Delete a staff record by ID
  *     parameters:
  *       - name: id
  *         in: path
@@ -229,7 +303,17 @@ router.delete('/all', async (req: Request, res: Response) => {
  *           type: integer
  *     responses:
  *       200:
- *         description: Deletion successful
+ *         description: Record deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
