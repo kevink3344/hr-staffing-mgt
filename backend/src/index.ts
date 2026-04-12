@@ -4,6 +4,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUiExpress from 'swagger-ui-express';
 import { config } from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { initializeDatabase } from './database.js';
 import staffRoutes from './routes/staff.js';
@@ -159,14 +160,14 @@ app.get('/api-docs', swaggerUiExpress.setup(swaggerSpec));
 // Health Check Endpoint
 /**
  * @swagger
- * /:
+ * /api/info:
  *   get:
  *     summary: API info
  *     responses:
  *       200:
  *         description: Server is running
  */
-app.get('/', (req, res) => {
+app.get('/api/info', (req, res) => {
     res.json({
         message: 'HR Staffing Management API',
         version: '1.0.0',
@@ -210,7 +211,12 @@ app.use('/api/comments', commentsRoutes);
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const frontendDist = path.join(__dirname, '../../frontend/dist');
+const frontendDist = [
+    path.join(__dirname, '../../frontend/dist'),
+    path.join(__dirname, '../frontend/dist'),
+    path.join(__dirname, '../../../frontend/dist'),
+].find(p => fs.existsSync(p)) || path.join(__dirname, '../../frontend/dist');
+console.log('Serving frontend from:', frontendDist, 'exists:', fs.existsSync(frontendDist));
 app.use(express.static(frontendDist));
 app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
