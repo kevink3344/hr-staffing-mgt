@@ -134,11 +134,31 @@ export async function initializeDatabase(): Promise<void> {
     CREATE TABLE IF NOT EXISTS saved_filters (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       column_name TEXT NOT NULL,
+      filter_type TEXT NOT NULL DEFAULT 'equals',
       column_value TEXT NOT NULL,
+      row_color TEXT NOT NULL DEFAULT '',
       created_by TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+    // Migration: add filter_type column if missing
+    const filterCols = await database.all("PRAGMA table_info(saved_filters)");
+    if (!filterCols.some((c: any) => c.name === 'filter_type')) {
+        await database.exec("ALTER TABLE saved_filters ADD COLUMN filter_type TEXT NOT NULL DEFAULT 'equals'");
+    }
+    if (!filterCols.some((c: any) => c.name === 'row_color')) {
+        await database.exec("ALTER TABLE saved_filters ADD COLUMN row_color TEXT NOT NULL DEFAULT ''");
+    }
+    if (!filterCols.some((c: any) => c.name === 'is_active')) {
+        await database.exec("ALTER TABLE saved_filters ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+    }
+
+    // Migration: add is_active column to saved_views if missing
+    const viewCols = await database.all("PRAGMA table_info(saved_views)");
+    if (!viewCols.some((c: any) => c.name === 'is_active')) {
+        await database.exec("ALTER TABLE saved_views ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+    }
 
     // PinnedRecords table (per-user pinned staff records)
     await database.exec(`

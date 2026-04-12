@@ -30,6 +30,7 @@ export const viewsApi = {
     create: (data: any) => api.post('/views', data),
     update: (id: number, data: any) => api.put(`/views/${id}`, data),
     delete: (id: number) => api.delete(`/views/${id}`),
+    toggle: (id: number) => api.patch(`/views/${id}/toggle`),
 };
 
 // Import API
@@ -52,8 +53,10 @@ export const staffDeleteApi = {
 // Filters API
 export const filtersApi = {
     getAll: (createdBy?: string) => api.get('/filters', { params: { created_by: createdBy } }),
-    create: (column_name: string, column_value: string) => api.post('/filters', { column_name, column_value }),
+    create: (column_name: string, column_value: string, filter_type: string = 'equals', row_color: string = '') =>
+        api.post('/filters', { column_name, column_value, filter_type, row_color }),
     delete: (id: number) => api.delete(`/filters/${id}`),
+    toggle: (id: number) => api.patch(`/filters/${id}/toggle`),
 };
 
 // Pins API

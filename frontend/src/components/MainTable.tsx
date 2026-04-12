@@ -9,79 +9,9 @@ import { ImportModal } from './ImportModal';
 interface FilterChip {
     id?: number;  // set for DB-persisted filters, absent for legend toggles
     column: string;
+    filter_type: string;
     value: string;
-}
-
-// ── Filter Builder Modal ──────────────────────────────────────────────────────
-interface FilterBuilderProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (filter: FilterChip) => void;
-    isDark: boolean;
-}
-
-function FilterBuilder({ isOpen, onClose, onSave, isDark }: FilterBuilderProps) {
-    const [column, setColumn] = useState(STAFF_COLUMNS[0]);
-    const [value, setValue] = useState('');
-
-    if (!isOpen) return null;
-
-    const handleSave = () => {
-        if (!value.trim()) return;
-        onSave({ column, value: value.trim() });
-        setValue('');
-        setColumn(STAFF_COLUMNS[0]);
-        onClose();
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className={`w-96 rounded-2px border-2 p-6 font-mono shadow-xl ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold">Add Filter</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-200"><X size={18} /></button>
-                </div>
-
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold mb-1 text-gray-400 uppercase">Column</label>
-                        <select
-                            value={column}
-                            onChange={(e) => setColumn(e.target.value)}
-                            className={`w-full px-3 py-2 border-2 rounded-2px text-sm focus:outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-                        >
-                            {STAFF_COLUMNS.map((col) => (
-                                <option key={col} value={col}>
-                                    {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold mb-1 text-gray-400 uppercase">Value</label>
-                        <input
-                            type="text"
-                            placeholder="e.g. T, 2026-06-30, ..."
-                            value={value}
-                            onChange={(e) => setValue(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                            className={`w-full px-3 py-2 border-2 rounded-2px text-sm focus:outline-none focus:border-blue-500 ${isDark ? 'bg-slate-800 border-gray-600 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                        />
-                    </div>
-
-                    <div className="flex gap-2 justify-end pt-2">
-                        <button onClick={onClose} className={`px-4 py-2 text-sm border-2 rounded-2px font-bold ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-600 hover:bg-gray-100'}`}>
-                            Cancel
-                        </button>
-                        <button onClick={handleSave} disabled={!value.trim()} className="px-4 py-2 text-sm border-2 rounded-2px font-bold bg-blue-600 border-blue-600 text-white hover:bg-blue-500 disabled:opacity-40">
-                            Apply Filter
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+    color?: string;
 }
 
 // ── List Table (inline editing) ──────────────────────────────────────────────
@@ -94,9 +24,10 @@ interface ListTableProps {
     onCancelRow: (recordId: number) => void;
     pinnedIds: Set<number>;
     onTogglePin: (recordId: number) => void;
+    activeFilters: FilterChip[];
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters }: ListTableProps) {
     const [activeRowId, setActiveRowId] = React.useState<number | null>(null);
 
     return (
@@ -132,7 +63,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                             <tr
                                 key={record.id}
                                 onClick={() => setActiveRowId(record.id)}
-                                className={`${getRowColorClass(record)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
+                                className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
                                 <td className="border-r-2 border-gray-800 px-2 py-1 w-10 min-w-10 text-center" onClick={(e) => e.stopPropagation()}>
                                     <button
@@ -210,9 +141,10 @@ interface DataTableProps {
     onRowClick: (record: StaffRecord) => void;
     pinnedIds: Set<number>;
     onTogglePin: (recordId: number) => void;
+    activeFilters: FilterChip[];
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters }: DataTableProps) {
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
@@ -240,7 +172,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                             key={record.id}
                             onClick={() => onRowClick(record)}
                             className={`${getRowColorClass(
-                                record
+                                record, activeFilters
                             )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
                         >
                             <td className={`border-r-2 border-gray-800 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
@@ -276,9 +208,10 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
 
 interface MainTableProps {
     onNavigateToViews: () => void;
+    onNavigateToFilters: () => void;
 }
 
-export function MainTable({ onNavigateToViews }: MainTableProps) {
+export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableProps) {
     const [records, setRecords] = useState<StaffRecord[]>([]);
     const [allRecords, setAllRecords] = useState<StaffRecord[]>([]);
     const [selectedRecord, setSelectedRecord] = useState<StaffRecord | null>(null);
@@ -290,7 +223,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
     const [visibleColumns, setVisibleColumns] = useState<string[]>(STAFF_COLUMNS);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState<FilterChip[]>([]);
-    const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false);
+    const [userFilters, setUserFilters] = useState<FilterChip[]>([]);
+    const [activeUserFilterIds, setActiveUserFilterIds] = useState<Set<number>>(new Set());
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [rowEdits, setRowEdits] = useState<Record<number, Record<string, string>>>({});
     const topScrollRef = React.useRef<HTMLDivElement>(null);
@@ -344,10 +278,23 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
             );
         }
 
-        for (const f of activeFilters) {
-            filtered = filtered.filter(
-                (record) => record[f.column]?.toLowerCase() === f.value.toLowerCase()
-            );
+        const activeUserFilters = userFilters.filter(f => f.id && activeUserFilterIds.has(f.id));
+        for (const f of [...activeFilters, ...activeUserFilters]) {
+            const val = f.value.toLowerCase();
+            switch (f.filter_type) {
+                case 'contains':
+                    filtered = filtered.filter((record) => record[f.column]?.toLowerCase().includes(val));
+                    break;
+                case 'does_not_equal':
+                    filtered = filtered.filter((record) => record[f.column]?.toLowerCase() !== val);
+                    break;
+                case 'does_not_contain':
+                    filtered = filtered.filter((record) => !record[f.column]?.toLowerCase().includes(val));
+                    break;
+                default: // equals
+                    filtered = filtered.filter((record) => record[f.column]?.toLowerCase() === val);
+                    break;
+            }
         }
 
         if (showPinnedOnly) {
@@ -355,7 +302,7 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         }
 
         setRecords(filtered);
-    }, [searchTerm, activeFilters, allRecords, showPinnedOnly, pinnedIds]);
+    }, [searchTerm, activeFilters, userFilters, activeUserFilterIds, allRecords, showPinnedOnly, pinnedIds]);
 
     const loadRecords = async () => {
         try {
@@ -373,7 +320,7 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         try {
             const userEmail = localStorage.getItem('userEmail') || 'demo@staffing.com';
             const res = await viewsApi.getAll(userEmail);
-            setViews(res.data);
+            setViews(res.data.filter((v: any) => v.is_system || v.is_active !== 0));
         } catch (err) {
             console.error('Failed to load views:', err);
         }
@@ -406,12 +353,16 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         try {
             const userEmail = localStorage.getItem('userEmail') || 'demo@staffing.com';
             const res = await filtersApi.getAll(userEmail);
-            const dbFilters: FilterChip[] = res.data.map((f: any) => ({
-                id: f.id,
-                column: f.column_name,
-                value: f.column_value,
-            }));
-            setActiveFilters(dbFilters);
+            const dbFilters: FilterChip[] = res.data
+                .filter((f: any) => f.is_active !== 0)
+                .map((f: any) => ({
+                    id: f.id,
+                    column: f.column_name,
+                    filter_type: f.filter_type || 'equals',
+                    value: f.column_value,
+                    color: f.row_color || undefined,
+                }));
+            setUserFilters(dbFilters);
         } catch (err) {
             console.error('Failed to load saved filters:', err);
         }
@@ -439,14 +390,29 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         ];
         setActiveFilters((prev) => {
             const isActive = prev.some((f) => f.column === column && f.value === value);
-            // Strip all legend filters from the current set
             const withoutLegend = prev.filter(
                 (f) => !legendFilters.some((l) => l.column === f.column && l.value === f.value)
             );
-            // If it was already active, just turn it off (return without adding it back)
             if (isActive) return withoutLegend;
-            // Otherwise activate only this one
-            return [...withoutLegend, { column, value }];
+            return [...withoutLegend, { column, value, filter_type: 'equals' }];
+        });
+        // Also deactivate any active user filters when toggling a legend filter
+        setActiveUserFilterIds(new Set());
+    };
+
+    const toggleUserFilter = (filterId: number) => {
+        // Mutually exclusive with legend filters and other user filters
+        setActiveFilters((prev) => prev.filter(f => ![
+            'contract', 'pos_end', 'pos_start'
+        ].some(col => f.column === col)));
+        setActiveUserFilterIds((prev) => {
+            if (prev.has(filterId)) {
+                const next = new Set(prev);
+                next.delete(filterId);
+                return next;
+            }
+            // Exclusive: only one user filter active at a time
+            return new Set([filterId]);
         });
     };
 
@@ -457,8 +423,8 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
         // Don't duplicate
         if (activeFilters.some((f) => f.column === filter.column && f.value === filter.value)) return;
         try {
-            const res = await filtersApi.create(filter.column, filter.value);
-            setActiveFilters((prev) => [...prev, { id: res.data.id, column: filter.column, value: filter.value }]);
+            const res = await filtersApi.create(filter.column, filter.value, filter.filter_type);
+            setActiveFilters((prev) => [...prev, { id: res.data.id, column: filter.column, filter_type: filter.filter_type, value: filter.value }]);
         } catch (err) {
             console.error('Failed to save filter:', err);
         }
@@ -709,40 +675,30 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                         </button>
 
                         {/* Divider if there are custom active filters */}
-                        {activeFilters.filter(f => !(
-                            (f.column === 'contract' && f.value === 'T') ||
-                            (f.column === 'pos_end' && f.value === '2026-06-30') ||
-                            (f.column === 'pos_start' && f.value === '2026-07-01')
-                        )).length > 0 && (
-                                <span className={`text-xs ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
-                            )}
+                        {userFilters.length > 0 && (
+                            <span className={`text-xs ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>|</span>
+                        )}
 
-                        {/* Custom filter chips */}
-                        {activeFilters
-                            .filter(f => !(
-                                (f.column === 'contract' && f.value === 'T') ||
-                                (f.column === 'pos_end' && f.value === '2026-06-30') ||
-                                (f.column === 'pos_start' && f.value === '2026-07-01')
-                            ))
-                            .map((f, i) => (
-                                <span
-                                    key={i}
-                                    className={`flex items-center gap-1 text-xs font-mono px-2 py-1 border-2 rounded-2px font-bold ${isDark ? 'bg-blue-900/50 border-blue-600 text-blue-200' : 'bg-blue-50 border-blue-400 text-blue-800'}`}
+                        {/* Custom filter chips (user DB filters – clickable toggles) */}
+                        {userFilters.map((f, i) => {
+                            const isActive = f.id ? activeUserFilterIds.has(f.id) : false;
+                            return (
+                                <button
+                                    key={`uf-${i}`}
+                                    onClick={() => f.id && toggleUserFilter(f.id)}
+                                    className={`flex items-center gap-1 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors font-bold ${isActive
+                                        ? 'bg-blue-400 border-blue-500 text-blue-900'
+                                        : isDark ? 'border-blue-600 text-gray-300 hover:bg-blue-900/30' : 'border-blue-400 text-gray-700 hover:bg-blue-50'}`}
                                 >
-                                    {COLUMN_LABELS[f.column as keyof typeof COLUMN_LABELS] || f.column} = {f.value}
-                                    <button
-                                        onClick={() => removeFilter(activeFilters.indexOf(f))}
-                                        className="ml-1 opacity-60 hover:opacity-100"
-                                    >
-                                        <X size={10} />
-                                    </button>
-                                </span>
-                            ))}
+                                    {COLUMN_LABELS[f.column as keyof typeof COLUMN_LABELS] || f.column} {f.filter_type === 'contains' ? '⊃' : f.filter_type === 'does_not_equal' ? '≠' : f.filter_type === 'does_not_contain' ? '⊅' : '='} {f.value}
+                                </button>
+                            );
+                        })}
 
                         {/* Add filter button */}
                         <button
-                            onClick={() => setIsFilterBuilderOpen(true)}
-                            title="Add filter"
+                            onClick={onNavigateToFilters}
+                            title="Manage filters"
                             className={`flex items-center justify-center w-6 h-6 border-2 rounded-2px font-bold transition-colors ${isDark ? 'border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400' : 'border-gray-400 text-gray-500 hover:border-blue-500 hover:text-blue-600'}`}
                         >
                             <Plus size={12} />
@@ -785,6 +741,7 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             onCancelRow={handleListCancel}
                             pinnedIds={pinnedIds}
                             onTogglePin={togglePin}
+                            activeFilters={[...activeFilters, ...userFilters]}
                         />
                     ) : (
                         <DataTable
@@ -796,6 +753,7 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                             }}
                             pinnedIds={pinnedIds}
                             onTogglePin={togglePin}
+                            activeFilters={[...activeFilters, ...userFilters]}
                         />
                     )}
                 </div>
@@ -814,14 +772,6 @@ export function MainTable({ onNavigateToViews }: MainTableProps) {
                 isOpen={isImportOpen}
                 onClose={() => setIsImportOpen(false)}
                 onImportSuccess={loadRecords}
-            />
-
-            {/* Filter Builder Modal */}
-            <FilterBuilder
-                isOpen={isFilterBuilderOpen}
-                onClose={() => setIsFilterBuilderOpen(false)}
-                onSave={addFilter}
-                isDark={isDark}
             />
         </div>
     );

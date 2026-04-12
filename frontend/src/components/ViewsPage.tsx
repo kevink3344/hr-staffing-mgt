@@ -77,6 +77,15 @@ export function ViewsPage({ onBack }: ViewsPageProps) {
         }
     };
 
+    const handleToggleView = async (id: number) => {
+        try {
+            await viewsApi.toggle(id);
+            loadViews();
+        } catch (err) {
+            console.error('Failed to toggle view:', err);
+        }
+    };
+
     const handleDelete = async (id: number) => {
         if (confirm('Delete this view?')) {
             try {
@@ -240,7 +249,27 @@ export function ViewsPage({ onBack }: ViewsPageProps) {
                                                 Created by {view.created_by}
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex gap-1 border-2 border-gray-600 rounded-2px p-1 bg-slate-900">
+                                                <button
+                                                    onClick={() => !view.is_active && handleToggleView(view.id)}
+                                                    className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${view.is_active
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                        }`}
+                                                >
+                                                    Active
+                                                </button>
+                                                <button
+                                                    onClick={() => view.is_active && handleToggleView(view.id)}
+                                                    className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${!view.is_active
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                        }`}
+                                                >
+                                                    Inactive
+                                                </button>
+                                            </div>
                                             <button
                                                 onClick={() => handleEdit(view)}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-2px text-sm border-2 border-blue-800"

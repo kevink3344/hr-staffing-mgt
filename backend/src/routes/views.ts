@@ -314,4 +314,19 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
 });
 
+router.patch('/:id/toggle', async (req: Request, res: Response) => {
+    try {
+        const db = await getDatabase();
+        const view = await db.get('SELECT is_system, is_active FROM saved_views WHERE id = ?', [req.params.id]);
+        if (!view) return res.status(404).json({ error: 'View not found' });
+        if (view.is_system) return res.status(403).json({ error: 'Cannot toggle system views' });
+        const newValue = view.is_active ? 0 : 1;
+        await db.run('UPDATE saved_views SET is_active = ? WHERE id = ?', [newValue, req.params.id]);
+        res.json({ success: true, is_active: newValue });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to toggle view' });
+    }
+});
+
 export default router;
