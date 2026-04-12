@@ -196,6 +196,27 @@ router.put('/:id', async (req: Request, res: Response) => {
 
 /**
  * @swagger
+ * /api/staff/all:
+ *   delete:
+ *     tags: [Staff Records]
+ *     summary: Delete all staff records (demo purposes)
+ *     responses:
+ *       200:
+ *         description: Deletion successful
+ */
+router.delete('/all', async (req: Request, res: Response) => {
+    try {
+        const db = await getDatabase();
+        const result = await db.run('DELETE FROM staff_records');
+        res.json({ success: true, deleted: result.changes });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to delete all records' });
+    }
+});
+
+/**
+ * @swagger
  * /api/staff/{id}:
  *   delete:
  *     tags: [Staff Records]
@@ -220,27 +241,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to delete record' });
-    }
-});
-
-/**
- * @swagger
- * /api/staff/all:
- *   delete:
- *     tags: [Staff Records]
- *     summary: Delete all staff records (demo purposes)
- *     responses:
- *       200:
- *         description: Deletion successful
- */
-router.delete('/all', async (req: Request, res: Response) => {
-    try {
-        const db = await getDatabase();
-        const result = await db.run('DELETE FROM staff_records');
-        res.json({ success: true, deleted: result.changes });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to delete all records' });
     }
 });
 
