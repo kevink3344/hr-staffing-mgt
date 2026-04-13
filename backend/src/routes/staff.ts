@@ -168,6 +168,87 @@ router.post('/', async (req: Request, res: Response) => {
 
 /**
  * @swagger
+ * /api/staff/bulk:
+ *   post:
+ *     tags: [Staff Records]
+ *     summary: Bulk import staff records from a JSON array
+ *     security:
+ *       - userEmail: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               $ref: '#/components/schemas/StaffRecord'
+ *     responses:
+ *       201:
+ *         description: Import results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 imported:
+ *                   type: integer
+ *                 failed:
+ *                   type: integer
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         description: Invalid request body
+ *       500:
+ *         description: Server error
+ */
+router.post('/bulk', async (req: Request, res: Response) => {
+    try {
+        const records = req.body;
+
+        if (!Array.isArray(records)) {
+            return res.status(400).json({ error: 'Request body must be a JSON array' });
+        }
+
+        if (records.length === 0) {
+            return res.status(400).json({ error: 'Array must not be empty' });
+        }
+
+        const db = await getDatabase();
+        let imported = 0;
+        const errors: { index: number; error: string }[] = [];
+
+        for (let i = 0; i < records.length; i++) {
+            try {
+                const data = records[i];
+                const columns = Object.keys(data).filter(k => k !== 'id');
+                if (columns.length === 0) {
+                    errors.push({ index: i, error: 'No valid columns' });
+                    continue;
+                }
+                const placeholders = columns.map(() => '?').join(', ');
+                const values = columns.map(col => data[col]);
+
+                await db.run(
+                    `INSERT INTO staff_records (${columns.join(', ')}) VALUES (${placeholders})`,
+                    values
+                );
+                imported++;
+            } catch (err: any) {
+                errors.push({ index: i, error: err.message || 'Unknown error' });
+            }
+        }
+
+        res.status(201).json({ imported, failed: errors.length, errors });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to bulk import records' });
+    }
+});
+
+/**
+ * @swagger
  * /api/staff/{id}:
  *   put:
  *     tags: [Staff Records]
