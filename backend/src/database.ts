@@ -1,15 +1,22 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '../data/database.sqlite');
+const DB_DIR = path.join(__dirname, '../data');
+const DB_PATH = path.join(DB_DIR, 'database.sqlite');
 
 let db: Database | null = null;
 
 export async function getDatabase(): Promise<Database> {
     if (db) return db;
+
+    // Ensure data directory exists
+    if (!fs.existsSync(DB_DIR)) {
+        fs.mkdirSync(DB_DIR, { recursive: true });
+    }
 
     db = await open({
         filename: DB_PATH,
