@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User } from 'lucide-react';
+import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User, Rows3, Rows4 } from 'lucide-react';
 import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass, getRowBgClass, hasFilterColor } from '../utils';
@@ -71,29 +71,33 @@ interface ListTableProps {
     stickyColumns: string[];
     stickyWidths: Record<string, number>;
     columnColors: Record<string, string>;
+    isCompact: boolean;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, isCompact }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
+    const py = isCompact ? 'py-0.5' : 'py-1';
+    const pyH = isCompact ? 'py-1' : 'py-2';
+    const firstPy = isCompact ? 'pt-1 pb-0.5' : 'pt-3 pb-1';
 
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
                     <tr className="border-b-2 border-gray-300">
-                        <th className="border-r-2 border-gray-300 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
+                        <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
                             <Pin size={12} />
                         </th>
-                        <th className="border-r-2 border-gray-300 px-2 py-2 text-center text-xs font-bold w-16 min-w-16">
+                        <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-16 min-w-16`}>
                             ✓&nbsp;/&nbsp;✗
                         </th>
-                        <th className="border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                        <th className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold w-12 min-w-12`}>
                             #
                         </th>
                         {visibleColumns.map((col) => (
                             <th
                                 key={col}
-                                className={`border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
+                                className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
                                 style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 152, stickyWidths)}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
@@ -112,7 +116,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 onClick={() => setActiveRowId(record.id)}
                                 className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
-                                <td className={`border-r-2 border-gray-300 px-2 py-1 w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
+                                <td className={`border-r-2 border-gray-300 px-2 ${py} w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                     <button
                                         onClick={() => onTogglePin(record.id)}
                                         title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -121,7 +125,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                         <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
                                     </button>
                                 </td>
-                                <td className="border-r-2 border-gray-300 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()} style={columnColors['__edit__'] ? { backgroundColor: columnColors['__edit__'] } : undefined}>
+                                <td className={`border-r-2 border-gray-300 px-2 ${py} w-16 min-w-16`} onClick={(e) => e.stopPropagation()} style={columnColors['__edit__'] ? { backgroundColor: columnColors['__edit__'] } : undefined}>
                                     <div className="flex items-center justify-center gap-1">
                                         <button
                                             onClick={() => { onSaveRow(record.id); setActiveRowId(null); }}
@@ -147,7 +151,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                         </button>
                                     </div>
                                 </td>
-                                <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
+                                <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
                                     {idx + 1}
                                 </td>
                                 {visibleColumns.map((col) => {
@@ -158,7 +162,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     return (
                                         <td
                                             key={`${record.id}-${col}`}
-                                            className={`border-r-2 border-gray-300 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
+                                            className={`border-r-2 border-gray-300 text-xs text-gray-900 min-w-40 ${idx === 0 ? firstPy : py} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
                                             style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}) }}
                                         >
                                             {isEditable ? (
@@ -195,24 +199,29 @@ interface DataTableProps {
     stickyColumns: string[];
     stickyWidths: Record<string, number>;
     columnColors: Record<string, string>;
+    isCompact: boolean;
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, isCompact }: DataTableProps) {
+    const py = isCompact ? 'py-0.5' : 'py-2';
+    const pyH = isCompact ? 'py-1' : 'py-2';
+    const firstPy = isCompact ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
+
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
                     <tr className="border-b-2 border-gray-300">
-                        <th className="border-r-2 border-gray-300 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
+                        <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
                             <Pin size={12} />
                         </th>
-                        <th className="border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                        <th className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold w-12 min-w-12`}>
                             #
                         </th>
                         {visibleColumns.map((col) => (
                             <th
                                 key={col}
-                                className={`border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
+                                className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
                                 style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 88, stickyWidths)}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
@@ -230,7 +239,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                 record, activeFilters
                             )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px]`}
                         >
-                            <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
+                            <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? firstPy : py}`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                 <button
                                     onClick={() => onTogglePin(record.id)}
                                     title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -239,7 +248,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                     <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
                                 </button>
                             </td>
-                            <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
+                            <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
                                 {idx + 1}
                             </td>
                             {visibleColumns.map((col) => {
@@ -248,7 +257,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                 return (
                                     <td
                                         key={`${record.id}-${col}`}
-                                        className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${getCellColorClass(
+                                        className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? firstPy : py} ${getCellColorClass(
                                             col,
                                             record,
                                             activeFilters
@@ -311,10 +320,17 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         return saved === 'light' ? 'light' : 'dark';
     });
     const isDark = theme === 'dark';
+    const [isCompact, setIsCompact] = useState<boolean>(() => {
+        return localStorage.getItem('mainUiCompact') === 'true';
+    });
 
     useEffect(() => {
         localStorage.setItem('mainUiTheme', theme);
     }, [theme]);
+
+    useEffect(() => {
+        localStorage.setItem('mainUiCompact', String(isCompact));
+    }, [isCompact]);
 
     // Sync the top scrollbar ghost width with actual table scroll width
     useEffect(() => {
@@ -677,6 +693,14 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                     <Moon size={20} strokeWidth={2.5} />
                                 )}
                             </button>
+                            <button
+                                onClick={() => setIsCompact(!isCompact)}
+                                aria-label="Toggle compact mode"
+                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                                title={isCompact ? 'Switch to comfortable' : 'Switch to compact'}
+                            >
+                                {isCompact ? <Rows3 size={20} strokeWidth={2.5} /> : <Rows4 size={20} strokeWidth={2.5} />}
+                            </button>
                             <div className="relative group">
                                 <button
                                     aria-label="User"
@@ -866,6 +890,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             stickyColumns={stickyColumns}
                             stickyWidths={stickyWidths}
                             columnColors={columnColors}
+                            isCompact={isCompact}
                         />
                     ) : (
                         <DataTable
@@ -881,6 +906,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             stickyColumns={stickyColumns}
                             stickyWidths={stickyWidths}
                             columnColors={columnColors}
+                            isCompact={isCompact}
                         />
                     )}
                 </div>
