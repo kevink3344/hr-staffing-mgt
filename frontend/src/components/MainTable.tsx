@@ -93,7 +93,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                             <input type="checkbox" checked={allChecked} onChange={() => onToggleCheckAll(records.map(r => r.id))} className="cursor-pointer" />
                         </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
-                            <Pin size={12} />
+                            <div className="flex items-center justify-center"><Pin size={12} /></div>
                         </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-16 min-w-16`}>
                             ✓&nbsp;/&nbsp;✗
@@ -230,7 +230,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                             <input type="checkbox" checked={allChecked} onChange={() => onToggleCheckAll(records.map(r => r.id))} className="cursor-pointer" />
                         </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
-                            <Pin size={12} />
+                            <div className="flex items-center justify-center"><Pin size={12} /></div>
                         </th>
                         <th className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold w-12 min-w-12`}>
                             #

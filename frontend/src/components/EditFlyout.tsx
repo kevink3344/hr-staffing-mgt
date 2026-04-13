@@ -95,6 +95,8 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
 
     const handleQueue = async () => {
         if (!record) return;
+        const action = queueItemId ? 'remove this item from' : 'add this item to';
+        if (!window.confirm(`Are you sure you want to ${action} the Queue?`)) return;
         setIsQueuing(true);
         try {
             if (queueItemId) {
@@ -344,8 +346,8 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                     onClick={handleQueue}
                                     disabled={isQueuing}
                                     className={`flex-1 font-mono font-bold py-2 px-4 rounded-2px border-2 ${queueItemId
-                                            ? 'bg-orange-500 hover:bg-orange-600 border-orange-700 text-white'
-                                            : 'bg-blue-600 hover:bg-blue-700 border-blue-800 text-white'
+                                        ? 'bg-orange-500 hover:bg-orange-600 border-orange-700 text-white'
+                                        : 'bg-blue-600 hover:bg-blue-700 border-blue-800 text-white'
                                         } disabled:bg-gray-400`}
                                 >
                                     {isQueuing ? '...' : queueItemId ? 'Remove' : 'Queue'}
