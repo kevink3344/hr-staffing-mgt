@@ -80,8 +80,8 @@ export const commentsApi = {
 // Sticky Columns API
 export const stickyColumnsApi = {
     getAll: () => api.get('/sticky-columns'),
-    create: (column_name: string) => api.post('/sticky-columns', { column_name }),
-    update: (id: number, column_name: string) => api.put(`/sticky-columns/${id}`, { column_name }),
+    create: (column_name: string, column_width: number = 220) => api.post('/sticky-columns', { column_name, column_width }),
+    update: (id: number, column_name: string, column_width?: number) => api.put(`/sticky-columns/${id}`, { column_name, column_width }),
     toggle: (id: number) => api.patch(`/sticky-columns/${id}/toggle`),
     delete: (id: number) => api.delete(`/sticky-columns/${id}`),
 };

@@ -15,16 +15,17 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     const db = await getDatabase();
     const createdBy = (req.headers['x-user-email'] as string) || 'demo@staffing.com';
-    const { column_name } = req.body;
+    const { column_name, column_width } = req.body;
     if (!column_name) {
         res.status(400).json({ error: 'column_name is required' });
         return;
     }
+    const width = Math.max(100, Math.min(500, parseInt(column_width) || 220));
     const maxOrder = await db.get('SELECT MAX(sort_order) as max_order FROM sticky_columns WHERE created_by = ?', [createdBy]);
     const sortOrder = (maxOrder?.max_order ?? -1) + 1;
     const result = await db.run(
-        'INSERT INTO sticky_columns (column_name, sort_order, is_active, created_by) VALUES (?, ?, 1, ?)',
-        [column_name, sortOrder, createdBy]
+        'INSERT INTO sticky_columns (column_name, column_width, sort_order, is_active, created_by) VALUES (?, ?, ?, 1, ?)',
+        [column_name, width, sortOrder, createdBy]
     );
     const row = await db.get('SELECT * FROM sticky_columns WHERE id = ?', [result.lastID]);
     res.status(201).json(row);
@@ -33,8 +34,13 @@ router.post('/', async (req, res) => {
 // PUT update sticky column
 router.put('/:id', async (req, res) => {
     const db = await getDatabase();
-    const { column_name } = req.body;
-    await db.run('UPDATE sticky_columns SET column_name = ? WHERE id = ?', [column_name, req.params.id]);
+    const { column_name, column_width } = req.body;
+    const width = column_width ? Math.max(100, Math.min(500, parseInt(column_width) || 220)) : undefined;
+    if (width !== undefined) {
+        await db.run('UPDATE sticky_columns SET column_name = ?, column_width = ? WHERE id = ?', [column_name, width, req.params.id]);
+    } else {
+        await db.run('UPDATE sticky_columns SET column_name = ? WHERE id = ?', [column_name, req.params.id]);
+    }
     const row = await db.get('SELECT * FROM sticky_columns WHERE id = ?', [req.params.id]);
     res.json(row);
 });

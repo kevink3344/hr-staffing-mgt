@@ -229,6 +229,7 @@ export async function initializeDatabase(): Promise<void> {
     CREATE TABLE IF NOT EXISTS sticky_columns (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       column_name TEXT NOT NULL,
+      column_width INTEGER NOT NULL DEFAULT 220,
       sort_order INTEGER NOT NULL DEFAULT 0,
       is_active INTEGER NOT NULL DEFAULT 1,
       created_by TEXT NOT NULL,
@@ -236,6 +237,12 @@ export async function initializeDatabase(): Promise<void> {
       UNIQUE(column_name, created_by)
     )
   `);
+
+    // Migration: add column_width to sticky_columns if missing
+    const stickyCols = await database.all("PRAGMA table_info(sticky_columns)");
+    if (!stickyCols.some((c: any) => c.name === 'column_width')) {
+        await database.exec("ALTER TABLE sticky_columns ADD COLUMN column_width INTEGER NOT NULL DEFAULT 220");
+    }
 
     console.log('✅ Database initialized');
 }

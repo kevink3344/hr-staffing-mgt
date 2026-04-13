@@ -11,6 +11,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     const [isCreating, setIsCreating] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [newColumn, setNewColumn] = useState<string>(STAFF_COLUMNS[0]);
+    const [newWidth, setNewWidth] = useState<number>(220);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -32,20 +33,22 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
         setIsCreating(false);
         setEditingId(null);
         setNewColumn(STAFF_COLUMNS[0]);
+        setNewWidth(220);
     };
 
     const handleEdit = (sc: any) => {
         setEditingId(sc.id);
         setIsCreating(true);
         setNewColumn(sc.column_name);
+        setNewWidth(sc.column_width || 220);
     };
 
     const handleSave = async () => {
         try {
             if (editingId) {
-                await stickyColumnsApi.update(editingId, newColumn);
+                await stickyColumnsApi.update(editingId, newColumn, newWidth);
             } else {
-                await stickyColumnsApi.create(newColumn);
+                await stickyColumnsApi.create(newColumn, newWidth);
             }
             loadStickyColumns();
             resetForm();
@@ -142,6 +145,17 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                         ))}
                                     </select>
                                 </div>
+                                <div className="w-32">
+                                    <label className="block text-sm text-gray-400 mb-1">Column Width (px)</label>
+                                    <input
+                                        type="number"
+                                        min={100}
+                                        max={500}
+                                        value={newWidth}
+                                        onChange={(e) => setNewWidth(Math.max(100, Math.min(500, parseInt(e.target.value) || 220)))}
+                                        className="w-full bg-gray-800 border-2 border-gray-600 text-white p-2 rounded-2px font-mono"
+                                    />
+                                </div>
                                 <button
                                     onClick={handleSave}
                                     className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-green-800"
@@ -169,8 +183,8 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                 <div
                                     key={sc.id}
                                     className={`border-2 rounded-2px p-4 flex items-center justify-between ${sc.is_active
-                                            ? 'border-blue-600 bg-blue-900/20'
-                                            : 'border-gray-700 bg-gray-900/20 opacity-60'
+                                        ? 'border-blue-600 bg-blue-900/20'
+                                        : 'border-gray-700 bg-gray-900/20 opacity-60'
                                         }`}
                                 >
                                     <div className="flex items-center gap-4">
@@ -180,20 +194,31 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                                 {COLUMN_LABELS[sc.column_name as keyof typeof COLUMN_LABELS] || sc.column_name}
                                             </div>
                                             <div className="text-xs text-gray-400">
-                                                {sc.column_name} · {sc.is_active ? 'Active' : 'Inactive'}
+                                                {sc.column_name} · {sc.column_width || 220}px · {sc.is_active ? 'Active' : 'Inactive'}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => handleToggle(sc.id)}
-                                            className={`font-bold py-1 px-3 rounded-2px border-2 text-sm ${sc.is_active
-                                                    ? 'bg-green-600 hover:bg-green-700 border-green-800 text-white'
-                                                    : 'bg-gray-600 hover:bg-gray-700 border-gray-800 text-gray-300'
-                                                }`}
-                                        >
-                                            {sc.is_active ? 'Active' : 'Inactive'}
-                                        </button>
+                                        <div className="flex gap-1 border-2 border-gray-600 rounded-2px p-1 bg-slate-900">
+                                            <button
+                                                onClick={() => !sc.is_active && handleToggle(sc.id)}
+                                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${sc.is_active
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                    }`}
+                                            >
+                                                Active
+                                            </button>
+                                            <button
+                                                onClick={() => sc.is_active && handleToggle(sc.id)}
+                                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${!sc.is_active
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                    }`}
+                                            >
+                                                Inactive
+                                            </button>
+                                        </div>
                                         <button
                                             onClick={() => handleEdit(sc)}
                                             className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-yellow-800 text-sm"
