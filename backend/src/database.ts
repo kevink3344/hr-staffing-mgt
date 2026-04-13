@@ -5,7 +5,10 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_DIR = path.join(__dirname, '../data');
+// Use /home/data on Azure (persists across deploys, outside wwwroot)
+// Fall back to ../data for local development
+const isAzure = !!process.env.WEBSITE_SITE_NAME;
+const DB_DIR = isAzure ? '/home/data' : path.join(__dirname, '../data');
 const DB_PATH = path.join(DB_DIR, 'database.sqlite');
 
 let db: Database | null = null;
