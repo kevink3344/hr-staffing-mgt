@@ -214,6 +214,19 @@ export async function initializeDatabase(): Promise<void> {
     )
   `);
 
+    // StickyColumns table
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS sticky_columns (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      column_name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(column_name, created_by)
+    )
+  `);
+
     console.log('✅ Database initialized');
 }
 

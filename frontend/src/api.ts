@@ -77,4 +77,13 @@ export const commentsApi = {
     delete: (id: number) => api.delete(`/comments/${id}`),
 };
 
+// Sticky Columns API
+export const stickyColumnsApi = {
+    getAll: () => api.get('/sticky-columns'),
+    create: (column_name: string) => api.post('/sticky-columns', { column_name }),
+    update: (id: number, column_name: string) => api.put(`/sticky-columns/${id}`, { column_name }),
+    toggle: (id: number) => api.patch(`/sticky-columns/${id}/toggle`),
+    delete: (id: number) => api.delete(`/sticky-columns/${id}`),
+};
+
 export default api;

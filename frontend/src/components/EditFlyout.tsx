@@ -102,15 +102,21 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                         {/* Header */}
                         <div className="bg-gray-900 text-white p-4 border-b-2 border-gray-800">
                             <h2 className="text-lg font-bold font-mono">{record.employee_name}</h2>
-                            <p className="text-xs text-gray-300 mt-1">
-                                {record.position_name || 'No position assigned'}
-                            </p>
                             <button
                                 onClick={onClose}
                                 className="absolute top-4 right-4 text-white hover:text-gray-200 text-2xl leading-none"
                             >
                                 ×
                             </button>
+                        </div>
+
+                        {/* Position Info */}
+                        <div className="bg-gray-50 border-b-2 border-gray-300 px-4 py-3">
+                            <p className="text-xs text-gray-500 font-mono font-bold tracking-wider mb-1">POSITION</p>
+                            <p className="text-sm font-bold font-mono text-gray-900">{record.position_name || '—'}</p>
+                            <p className="text-xs text-gray-500 font-mono mt-1">
+                                Pos# {record.pos_no || '—'} · {record.classroom_teaching_assignment || '—'}
+                            </p>
                         </div>
 
                         {/* Tabs */}
@@ -153,16 +159,6 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                         <div className={`overflow-y-auto ${activeTab === 'comments' ? 'hidden' : 'flex-1'}`}>
                             {activeTab === 'details' ? (
                                 <div className="p-4 space-y-4">
-                                    {/* Position name only */}
-                                    <div className="bg-gray-100 p-3 rounded-2px border-2 border-gray-300">
-                                        <label className="text-xs font-mono text-gray-600">
-                                            {COLUMN_LABELS.position_name}
-                                        </label>
-                                        <div className="text-sm font-mono text-gray-900 mt-1">
-                                            {formData.position_name || '—'}
-                                        </div>
-                                    </div>
-
                                     {/* Editable fields */}
                                     <div>
                                         <h3 className="font-mono font-bold text-xs text-gray-700 mb-3">

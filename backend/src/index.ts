@@ -14,6 +14,7 @@ import importRoutes from './routes/import.js';
 import filtersRoutes from './routes/filters.js';
 import pinsRoutes from './routes/pins.js';
 import commentsRoutes from './routes/comments.js';
+import stickyColumnsRoutes from './routes/stickyColumns.js';
 
 config();
 
@@ -207,6 +208,7 @@ app.use('/api/import', importRoutes);
 app.use('/api/filters', filtersRoutes);
 app.use('/api/pins', pinsRoutes);
 app.use('/api/comments', commentsRoutes);
+app.use('/api/sticky-columns', stickyColumnsRoutes);
 
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url);

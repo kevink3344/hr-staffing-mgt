@@ -61,6 +61,19 @@ export function getRowColorClass(record: any, activeFilters?: ActiveFilter[]): s
     return 'bg-white hover:bg-gray-100 text-gray-900';
 }
 
+export function getRowBgClass(record: any, activeFilters?: ActiveFilter[]): string {
+    if (activeFilters) {
+        for (let i = activeFilters.length - 1; i >= 0; i--) {
+            const f = activeFilters[i];
+            if (f.highlight_type === 'cell') continue;
+            if (f.color && FILTER_ROW_COLORS[f.color] && recordMatchesFilter(record, f)) {
+                return FILTER_ROW_COLORS[f.color].bg;
+            }
+        }
+    }
+    return 'bg-white';
+}
+
 export function getCellColorClass(
     column: string,
     record: any,

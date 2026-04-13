@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, RefreshCw, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock } from 'lucide-react';
-import { staffApi, viewsApi, filtersApi, pinsApi } from '../api';
+import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp } from 'lucide-react';
+import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
-import { getRowColorClass, getCellColorClass } from '../utils';
+import { getRowColorClass, getCellColorClass, getRowBgClass } from '../utils';
 import { EditFlyout } from './EditFlyout';
 import { ImportModal } from './ImportModal';
 import { ActivityFeed } from './ActivityFeed';
@@ -16,6 +16,45 @@ interface FilterChip {
     highlight_type?: string;  // 'row' (default) or 'cell'
 }
 
+// ── Sticky column helper ──────────────────────────────────────────────────────
+function getStickyEdges(col: string, visibleColumns: string[], stickyColumns: string[]) {
+    const visibleSticky = visibleColumns.filter(c => stickyColumns.includes(c));
+    const isFirst = visibleSticky[0] === col;
+    const isLast = visibleSticky[visibleSticky.length - 1] === col;
+    return { isFirst, isLast };
+}
+
+function buildStickyShadow(isFirst: boolean, isLast: boolean): string {
+    const shadows: string[] = [];
+    shadows.push('inset 0 2px 0 0 #93c5fd');   // top
+    shadows.push('inset 0 -2px 0 0 #93c5fd');  // bottom
+    if (isFirst) shadows.push('inset 2px 0 0 0 #93c5fd');  // left
+    if (isLast) shadows.push('inset -2px 0 0 0 #93c5fd');  // right (inset)
+    return shadows.join(', ');
+}
+
+function getStickyStyle(col: string, visibleColumns: string[], stickyColumns: string[], baseOffset: number): React.CSSProperties | undefined {
+    if (!stickyColumns.includes(col)) return undefined;
+    let left = baseOffset;
+    for (const vc of visibleColumns) {
+        if (vc === col) break;
+        if (stickyColumns.includes(vc)) left += 160; // min-w-40 = 160px
+    }
+    const { isFirst, isLast } = getStickyEdges(col, visibleColumns, stickyColumns);
+    return { position: 'sticky', left, zIndex: 5, boxShadow: buildStickyShadow(isFirst, isLast) };
+}
+
+function getStickyHeaderStyle(col: string, visibleColumns: string[], stickyColumns: string[], baseOffset: number): React.CSSProperties | undefined {
+    if (!stickyColumns.includes(col)) return undefined;
+    let left = baseOffset;
+    for (const vc of visibleColumns) {
+        if (vc === col) break;
+        if (stickyColumns.includes(vc)) left += 160;
+    }
+    const { isFirst, isLast } = getStickyEdges(col, visibleColumns, stickyColumns);
+    return { position: 'sticky', left, zIndex: 15, boxShadow: buildStickyShadow(isFirst, isLast) };
+}
+
 // ── List Table (inline editing) ──────────────────────────────────────────────
 interface ListTableProps {
     records: StaffRecord[];
@@ -27,29 +66,31 @@ interface ListTableProps {
     pinnedIds: Set<number>;
     onTogglePin: (recordId: number) => void;
     activeFilters: FilterChip[];
+    stickyColumns: string[];
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
 
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
-                    <tr className="border-b-2 border-gray-800">
-                        <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
+                    <tr className="border-b-2 border-gray-300">
+                        <th className="border-r-2 border-gray-300 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
                             <Pin size={12} />
                         </th>
-                        <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-16 min-w-16">
+                        <th className="border-r-2 border-gray-300 px-2 py-2 text-center text-xs font-bold w-16 min-w-16">
                             ✓&nbsp;/&nbsp;✗
                         </th>
-                        <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                        <th className="border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
                             #
                         </th>
                         {visibleColumns.map((col) => (
                             <th
                                 key={col}
-                                className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
+                                className={`border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
+                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 152)}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </th>
@@ -67,7 +108,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 onClick={() => setActiveRowId(record.id)}
                                 className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
-                                <td className={`border-r-2 border-gray-800 px-2 py-1 w-10 min-w-10 text-center ${pinnedIds.has(record.id) ? 'bg-amber-100' : ''}`} onClick={(e) => e.stopPropagation()}>
+                                <td className={`border-r-2 border-gray-300 px-2 py-1 w-10 min-w-10 text-center ${pinnedIds.has(record.id) ? 'bg-amber-100' : ''}`} onClick={(e) => e.stopPropagation()}>
                                     <button
                                         onClick={() => onTogglePin(record.id)}
                                         title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -76,7 +117,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                         <Pin size={12} strokeWidth={2.5} fill={pinnedIds.has(record.id) ? 'currentColor' : 'none'} />
                                     </button>
                                 </td>
-                                <td className="border-r-2 border-gray-800 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()}>
+                                <td className="border-r-2 border-gray-300 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex items-center justify-center gap-1">
                                         <button
                                             onClick={() => { onSaveRow(record.id); setActiveRowId(null); }}
@@ -102,16 +143,18 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                         </button>
                                     </div>
                                 </td>
-                                <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'}`}>
+                                <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'}`}>
                                     {idx + 1}
                                 </td>
                                 {visibleColumns.map((col) => {
                                     const isEditable = isActive && (EDITABLE_FIELDS as readonly string[]).includes(col);
                                     const cellValue = edits[col] !== undefined ? edits[col] : (record[col] ?? '');
+                                    const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 152);
                                     return (
                                         <td
                                             key={`${record.id}-${col}`}
-                                            className={`border-r-2 border-gray-800 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)}`}
+                                            className={`border-r-2 border-gray-300 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
+                                            style={stickyStyle}
                                         >
                                             {isEditable ? (
                                                 <input
@@ -144,24 +187,26 @@ interface DataTableProps {
     pinnedIds: Set<number>;
     onTogglePin: (recordId: number) => void;
     activeFilters: FilterChip[];
+    stickyColumns: string[];
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns }: DataTableProps) {
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
-                    <tr className="border-b-2 border-gray-800">
-                        <th className="border-r-2 border-gray-800 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
+                    <tr className="border-b-2 border-gray-300">
+                        <th className="border-r-2 border-gray-300 px-2 py-2 text-center text-xs font-bold w-10 min-w-10">
                             <Pin size={12} />
                         </th>
-                        <th className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
+                        <th className="border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold w-12 min-w-12">
                             #
                         </th>
                         {visibleColumns.map((col) => (
                             <th
                                 key={col}
-                                className="border-r-2 border-gray-800 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40"
+                                className={`border-r-2 border-gray-300 px-3 py-2 text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
+                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 88)}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </th>
@@ -173,11 +218,12 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                         <tr
                             key={record.id}
                             onClick={() => onRowClick(record)}
+                            title="Click to open details"
                             className={`${getRowColorClass(
                                 record, activeFilters
-                            )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
+                            )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px]`}
                         >
-                            <td className={`border-r-2 border-gray-800 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${pinnedIds.has(record.id) ? 'bg-amber-100' : ''}`} onClick={(e) => e.stopPropagation()}>
+                            <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${pinnedIds.has(record.id) ? 'bg-amber-100' : ''}`} onClick={(e) => e.stopPropagation()}>
                                 <button
                                     onClick={() => onTogglePin(record.id)}
                                     title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -186,21 +232,25 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                     <Pin size={12} strokeWidth={2.5} fill={pinnedIds.has(record.id) ? 'currentColor' : 'none'} />
                                 </button>
                             </td>
-                            <td className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
+                            <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
                                 {idx + 1}
                             </td>
-                            {visibleColumns.map((col) => (
-                                <td
-                                    key={`${record.id}-${col}`}
-                                    className={`border-r-2 border-gray-800 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${getCellColorClass(
-                                        col,
-                                        record,
-                                        activeFilters
-                                    )}`}
-                                >
-                                    {record[col] || '—'}
-                                </td>
-                            ))}
+                            {visibleColumns.map((col) => {
+                                const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 88);
+                                return (
+                                    <td
+                                        key={`${record.id}-${col}`}
+                                        className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis min-w-40 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${getCellColorClass(
+                                            col,
+                                            record,
+                                            activeFilters
+                                        )} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
+                                        style={stickyStyle}
+                                    >
+                                        {record[col] || '—'}
+                                    </td>
+                                );
+                            })}
                         </tr>
                     ))}
                 </tbody>
@@ -212,9 +262,10 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
 interface MainTableProps {
     onNavigateToViews: () => void;
     onNavigateToFilters: () => void;
+    onNavigateToSettings: () => void;
 }
 
-export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableProps) {
+export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateToSettings }: MainTableProps) {
     const [records, setRecords] = useState<StaffRecord[]>([]);
     const [allRecords, setAllRecords] = useState<StaffRecord[]>([]);
     const [selectedRecord, setSelectedRecord] = useState<StaffRecord | null>(null);
@@ -241,6 +292,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
     const tableContainerRef = useRef<HTMLDivElement>(null);
     const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
     const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+    const [stickyColumns, setStickyColumns] = useState<string[]>([]);
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const saved = localStorage.getItem('mainUiTheme');
         return saved === 'light' ? 'light' : 'dark';
@@ -268,6 +321,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
         loadViews();
         loadSavedFilters();
         loadPins();
+        loadStickyColumns();
     }, []);
 
     useEffect(() => {
@@ -341,6 +395,16 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
             setPinnedIds(new Set(res.data));
         } catch (err) {
             console.error('Failed to load pins:', err);
+        }
+    };
+
+    const loadStickyColumns = async () => {
+        try {
+            const res = await stickyColumnsApi.getAll();
+            const active = res.data.filter((sc: any) => sc.is_active).map((sc: any) => sc.column_name);
+            setStickyColumns(active);
+        } catch (err) {
+            console.error('Failed to load sticky columns:', err);
         }
     };
 
@@ -535,13 +599,13 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                                 <Clock size={20} strokeWidth={2.5} />
                             </button>
                             <button
-                                onClick={loadRecords}
-                                aria-label="Refresh data"
+                                onClick={onNavigateToSettings}
+                                aria-label="Settings"
                                 className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-700 hover:text-blue-600'
                                     }`}
-                                title="Refresh data"
+                                title="Settings"
                             >
-                                <RefreshCw size={20} strokeWidth={2.5} />
+                                <Settings size={20} strokeWidth={2.5} />
                             </button>
                             <button
                                 onClick={onNavigateToViews}
@@ -724,6 +788,9 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                         if (topScrollRef.current && tableContainerRef.current) {
                             topScrollRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
                         }
+                        if (tableContainerRef.current) {
+                            setShowScrollTop(tableContainerRef.current.scrollTop > 300);
+                        }
                     }}
                     className="flex-1 min-h-0 overflow-auto bg-gray-100 rounded-b-2px border-2 border-t-0 border-gray-800 shadow-lg"
                 >
@@ -738,6 +805,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                             pinnedIds={pinnedIds}
                             onTogglePin={togglePin}
                             activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
+                            stickyColumns={stickyColumns}
                         />
                     ) : (
                         <DataTable
@@ -750,10 +818,22 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                             pinnedIds={pinnedIds}
                             onTogglePin={togglePin}
                             activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
+                            stickyColumns={stickyColumns}
                         />
                     )}
                 </div>
             </main>
+
+            {/* Scroll to top */}
+            {showScrollTop && (
+                <button
+                    onClick={() => tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="fixed bottom-6 right-6 z-40 bg-gray-900 text-white p-3 rounded-full shadow-lg hover:bg-gray-700 transition-colors border-2 border-gray-600"
+                    title="Scroll to top"
+                >
+                    <ArrowUp size={20} strokeWidth={2.5} />
+                </button>
+            )}
 
             {/* Edit Flyout */}
             <EditFlyout
