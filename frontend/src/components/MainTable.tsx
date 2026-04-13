@@ -784,8 +784,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                     }`}
             >
                 <div className="max-w-full mx-auto">
-                    <div className="flex justify-between items-start gap-2 sm:gap-4 mb-4 sm:mb-6">
-                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2 sm:gap-4 mb-4 sm:mb-6">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                             <button
                                 onClick={() => setIsMenuOpen(true)}
                                 aria-label="Open menu"
@@ -803,7 +803,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                 </p>
                             </div>
                         </div>
-                        <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0">
+                        <div className={`fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around py-2 border-t-2 sm:static sm:border-t-0 sm:py-0 sm:gap-2 sm:w-auto sm:justify-end sm:flex-shrink-0 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`}>
                             <button
                                 onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                                 aria-label="Toggle pinned only"
@@ -1027,7 +1027,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
             </header>
 
             {/* Table */}
-            <main className="flex-1 flex flex-col min-h-0 px-6 pb-6 pt-0">
+            <main className="flex-1 flex flex-col min-h-0 px-6 pb-16 sm:pb-6 pt-0">
                 {/* Top scrollbar – synced with main container */}
                 <div
                     ref={topScrollRef}
