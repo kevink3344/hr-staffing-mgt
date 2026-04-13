@@ -593,7 +593,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
             {isMenuOpen && (
                 <>
                     <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMenuOpen(false)} />
-                    <div className={`fixed top-0 left-0 h-full w-56 z-50 border-r-4 flex flex-col ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`}>
+                    <div className={`fixed top-0 left-0 h-full w-full sm:w-56 z-50 border-r-4 flex flex-col ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`}>
                         <div className="flex items-center justify-between p-4 border-b-2 border-gray-600">
                             <span className="font-mono font-bold text-lg">Menu</span>
                             <button onClick={() => setIsMenuOpen(false)} className={`h-8 w-8 flex items-center justify-center rounded-2px ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
@@ -636,32 +636,32 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
 
             {/* Header */}
             <header
-                className={`border-b-4 p-6 shrink-0 ${isDark
+                className={`border-b-4 p-3 sm:p-6 shrink-0 ${isDark
                     ? 'bg-gray-900 border-gray-800'
                     : 'bg-white border-gray-300'
                     }`}
             >
                 <div className="max-w-full mx-auto">
-                    <div className="flex justify-between items-start gap-4 mb-6">
-                        <div className="flex items-center gap-3">
+                    <div className="flex justify-between items-start gap-2 sm:gap-4 mb-4 sm:mb-6">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                             <button
                                 onClick={() => setIsMenuOpen(true)}
                                 aria-label="Open menu"
-                                className={`h-10 w-10 flex items-center justify-center rounded-2px ${isDark ? 'text-gray-300 hover:text-white hover:bg-slate-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                                className={`h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-2px ${isDark ? 'text-gray-300 hover:text-white hover:bg-slate-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
                                 title="Menu"
                             >
                                 <Grip size={20} strokeWidth={2.5} />
                             </button>
-                            <div>
-                                <h1 className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            <div className="min-w-0">
+                                <h1 className={`text-base sm:text-xl font-bold font-mono truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                     Carroll Middle School – 360
                                 </h1>
-                                <p className={`text-xs font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                <p className={`text-[10px] sm:text-xs font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                                     Date tracked to 9/01/2026 as of 04/10/2026
                                 </p>
                             </div>
                         </div>
-                        <div className="flex gap-2 items-center">
+                        <div className="flex gap-1 sm:gap-2 items-center flex-shrink-0">
                             <button
                                 onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                                 aria-label="Toggle pinned only"
@@ -717,7 +717,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                     </div>
 
                     {/* Controls */}
-                    <div className="flex gap-4 mb-4 flex-wrap">
+                    <div className="flex gap-2 sm:gap-4 mb-4 flex-wrap">
                         {/* Search */}
                         <div className="flex-1 min-w-32">
                             <input
