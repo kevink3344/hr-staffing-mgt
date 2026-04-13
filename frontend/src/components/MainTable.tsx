@@ -89,6 +89,9 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
                     <tr className="border-b-2 border-gray-300">
+                        <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-8 min-w-8`}>
+                            <input type="checkbox" checked={allChecked} onChange={() => onToggleCheckAll(records.map(r => r.id))} className="cursor-pointer" />
+                        </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
                             <Pin size={12} />
                         </th>
