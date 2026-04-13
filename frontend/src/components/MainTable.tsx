@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User, Rows4 } from 'lucide-react';
-import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi } from '../api';
+import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi, queueApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass, getRowBgClass, hasFilterColor } from '../utils';
 import { EditFlyout } from './EditFlyout';
@@ -72,13 +72,17 @@ interface ListTableProps {
     stickyWidths: Record<string, number>;
     columnColors: Record<string, string>;
     density: 'comfortable' | 'compact' | 'very-compact';
+    checkedIds: Set<number>;
+    onToggleCheck: (id: number) => void;
+    onToggleCheckAll: (ids: number[]) => void;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-1';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
     const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-1';
+    const allChecked = records.length > 0 && records.every(r => checkedIds.has(r.id));
 
     return (
         <div className="w-full">
@@ -98,7 +102,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                             <th
                                 key={col}
                                 className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
-                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 152, stickyWidths)}
+                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 192, stickyWidths)}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </th>
@@ -116,6 +120,9 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 onClick={() => setActiveRowId(record.id)}
                                 className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
+                                <td className={`border-r-2 border-gray-300 px-2 ${py} w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()}>
+                                    <input type="checkbox" checked={checkedIds.has(record.id)} onChange={() => onToggleCheck(record.id)} className="cursor-pointer" />
+                                </td>
                                 <td className={`border-r-2 border-gray-300 px-2 ${py} w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                     <button
                                         onClick={() => onTogglePin(record.id)}
@@ -157,7 +164,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 {visibleColumns.map((col) => {
                                     const isEditable = isActive && (EDITABLE_FIELDS as readonly string[]).includes(col);
                                     const cellValue = edits[col] !== undefined ? edits[col] : (record[col] ?? '');
-                                    const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 152, stickyWidths);
+                                    const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 192, stickyWidths);
                                     const colColor = columnColors[col] && !hasFilterColor(col, record, activeFilters) ? columnColors[col] : undefined;
                                     return (
                                         <td
@@ -200,18 +207,25 @@ interface DataTableProps {
     stickyWidths: Record<string, number>;
     columnColors: Record<string, string>;
     density: 'comfortable' | 'compact' | 'very-compact';
+    checkedIds: Set<number>;
+    onToggleCheck: (id: number) => void;
+    onToggleCheckAll: (ids: number[]) => void;
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll }: DataTableProps) {
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-2';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
     const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
+    const allChecked = records.length > 0 && records.every(r => checkedIds.has(r.id));
 
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
                 <thead className="bg-gray-900 text-white sticky top-0 z-10">
                     <tr className="border-b-2 border-gray-300">
+                        <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
+                            <input type="checkbox" checked={allChecked} onChange={() => onToggleCheckAll(records.map(r => r.id))} className="cursor-pointer" />
+                        </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
                             <Pin size={12} />
                         </th>
@@ -222,7 +236,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                             <th
                                 key={col}
                                 className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
-                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 88, stickyWidths)}
+                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 128, stickyWidths)}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </th>
@@ -239,6 +253,9 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                 record, activeFilters
                             )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px]`}
                         >
+                            <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? firstPy : py}`} onClick={(e) => e.stopPropagation()}>
+                                <input type="checkbox" checked={checkedIds.has(record.id)} onChange={() => onToggleCheck(record.id)} className="cursor-pointer" />
+                            </td>
                             <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? firstPy : py}`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                 <button
                                     onClick={() => onTogglePin(record.id)}
@@ -252,7 +269,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                 {idx + 1}
                             </td>
                             {visibleColumns.map((col) => {
-                                const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 88, stickyWidths);
+                                const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 128, stickyWidths);
                                 const colColor = columnColors[col] && !hasFilterColor(col, record, activeFilters) ? columnColors[col] : undefined;
                                 return (
                                     <td
@@ -316,6 +333,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const [stickyWidths, setStickyWidths] = useState<Record<string, number>>({});
     const [columnColors, setColumnColors] = useState<Record<string, string>>({});
     const [showScrollTop, setShowScrollTop] = useState(false);
+    const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
+    const [isQueueing, setIsQueueing] = useState(false);
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const saved = localStorage.getItem('mainUiTheme');
         return saved === 'light' ? 'light' : 'dark';
@@ -483,6 +502,48 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
             }
         } catch (err) {
             console.error('Failed to toggle pin:', err);
+        }
+    };
+
+    const toggleCheck = (id: number) => {
+        setCheckedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleCheckAll = (ids: number[]) => {
+        const allChecked = ids.every(id => checkedIds.has(id));
+        if (allChecked) {
+            setCheckedIds(new Set());
+        } else {
+            setCheckedIds(new Set(ids));
+        }
+    };
+
+    const handleBulkQueue = async () => {
+        if (checkedIds.size === 0) return;
+        setIsQueueing(true);
+        try {
+            let added = 0;
+            let skipped = 0;
+            for (const id of checkedIds) {
+                try {
+                    await queueApi.create(id);
+                    added++;
+                } catch (err: any) {
+                    if (err?.response?.status === 409) skipped++;
+                    else throw err;
+                }
+            }
+            setCheckedIds(new Set());
+            alert(`Queued ${added} item${added !== 1 ? 's' : ''}${skipped > 0 ? ` (${skipped} already in queue)` : ''}`);
+        } catch (err) {
+            console.error('Failed to queue items:', err);
+            alert('Failed to queue some items');
+        } finally {
+            setIsQueueing(false);
         }
     };
 
@@ -897,6 +958,17 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                         >
                             <Plus size={12} />
                         </button>
+
+                        {/* Bulk queue button – visible when items are checked */}
+                        {checkedIds.size > 0 && (
+                            <button
+                                onClick={handleBulkQueue}
+                                disabled={isQueueing}
+                                className="flex items-center gap-1 px-3 py-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white text-xs font-mono font-bold rounded-2px border-2 border-orange-700 transition-colors"
+                            >
+                                {isQueueing ? 'Queuing...' : `Queue (${checkedIds.size})`}
+                            </button>
+                        )}
                     </div>
                 </div>
             </header>
@@ -943,6 +1015,9 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             stickyWidths={stickyWidths}
                             columnColors={columnColors}
                             density={density}
+                            checkedIds={checkedIds}
+                            onToggleCheck={toggleCheck}
+                            onToggleCheckAll={toggleCheckAll}
                         />
                     ) : (
                         <DataTable
@@ -959,6 +1034,9 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             stickyWidths={stickyWidths}
                             columnColors={columnColors}
                             density={density}
+                            checkedIds={checkedIds}
+                            onToggleCheck={toggleCheck}
+                            onToggleCheckAll={toggleCheckAll}
                         />
                     )}
                 </div>
