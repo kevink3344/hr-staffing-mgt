@@ -280,9 +280,10 @@ interface MainTableProps {
     onNavigateToViews: () => void;
     onNavigateToFilters: () => void;
     onNavigateToSettings: () => void;
+    onNavigateToQueue: () => void;
 }
 
-export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateToSettings }: MainTableProps) {
+export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue }: MainTableProps) {
     const [records, setRecords] = useState<StaffRecord[]>([]);
     const [allRecords, setAllRecords] = useState<StaffRecord[]>([]);
     const [selectedRecord, setSelectedRecord] = useState<StaffRecord | null>(null);
@@ -647,6 +648,13 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             >
                                 <Settings size={18} strokeWidth={2.5} />
                                 Settings
+                            </button>
+                            <button
+                                onClick={() => { onNavigateToQueue(); setIsMenuOpen(false); }}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-cyan-300 hover:bg-slate-800' : 'text-cyan-700 hover:bg-gray-100'}`}
+                            >
+                                <Clock size={18} strokeWidth={2.5} />
+                                Queue
                             </button>
                         </nav>
                     </div>

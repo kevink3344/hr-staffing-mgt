@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { staffApi, historyApi, commentsApi } from '../api';
+import { staffApi, historyApi, commentsApi, queueApi } from '../api';
 import { COLUMN_LABELS, EDITABLE_FIELDS, StaffRecord } from '../constants';
 
 interface EditFlyoutProps {
@@ -16,6 +16,8 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
     const [comments, setComments] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [queueItemId, setQueueItemId] = useState<number | null>(null);
+    const [isQueuing, setIsQueuing] = useState(false);
     const commentsEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -23,6 +25,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
             setFormData(record);
             loadHistory(record.id);
             loadComments(record.id);
+            checkQueueStatus(record.id);
         }
     }, [record]);
 
@@ -76,6 +79,36 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
             alert('Failed to save changes');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const checkQueueStatus = async (recordId: number) => {
+        try {
+            const res = await queueApi.getAll(undefined, recordId);
+            const active = res.data.find((q: any) => q.status !== 'Cancelled');
+            setQueueItemId(active ? active.id : null);
+        } catch (err) {
+            console.error('Failed to check queue status:', err);
+            setQueueItemId(null);
+        }
+    };
+
+    const handleQueue = async () => {
+        if (!record) return;
+        setIsQueuing(true);
+        try {
+            if (queueItemId) {
+                await queueApi.updateStatus(queueItemId, 'Cancelled');
+                setQueueItemId(null);
+            } else {
+                const res = await queueApi.create(record.id);
+                setQueueItemId(res.data.id);
+            }
+        } catch (err) {
+            console.error('Failed to update queue:', err);
+            alert('Failed to update queue');
+        } finally {
+            setIsQueuing(false);
         }
     };
 
@@ -306,6 +339,16 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                     className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
                                 >
                                     {isSaving ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                    onClick={handleQueue}
+                                    disabled={isQueuing}
+                                    className={`flex-1 font-mono font-bold py-2 px-4 rounded-2px border-2 ${queueItemId
+                                            ? 'bg-orange-500 hover:bg-orange-600 border-orange-700 text-white'
+                                            : 'bg-blue-600 hover:bg-blue-700 border-blue-800 text-white'
+                                        } disabled:bg-gray-400`}
+                                >
+                                    {isQueuing ? '...' : queueItemId ? 'Remove' : 'Queue'}
                                 </button>
                                 <button
                                     onClick={onClose}

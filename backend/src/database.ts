@@ -257,6 +257,24 @@ export async function initializeDatabase(): Promise<void> {
     )
   `);
 
+    // Queue items table
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS queue_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      staff_record_id INTEGER NOT NULL,
+      employee_name TEXT,
+      employee_no TEXT,
+      position_name TEXT,
+      pos_no TEXT,
+      effective_date TEXT,
+      status TEXT NOT NULL DEFAULT 'Pending',
+      created_by TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (staff_record_id) REFERENCES staff_records(id) ON DELETE CASCADE
+    )
+  `);
+
     console.log('✅ Database initialized');
 }
 

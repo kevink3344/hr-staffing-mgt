@@ -95,4 +95,15 @@ export const columnColorsApi = {
     delete: (id: number) => api.delete(`/column-colors/${id}`),
 };
 
+// Queue API
+export const queueApi = {
+    getAll: (status?: string, staffRecordId?: number) =>
+        api.get('/queue', { params: { status, staff_record_id: staffRecordId } }),
+    create: (staff_record_id: number) => api.post('/queue', { staff_record_id }),
+    updateStatus: (id: number, status: string) => api.patch(`/queue/${id}/status`, { status }),
+    update: (id: number, data: { employee_name: string; employee_no: string; position_name: string; pos_no: string; effective_date: string }) =>
+        api.put(`/queue/${id}`, data),
+    delete: (id: number) => api.delete(`/queue/${id}`),
+};
+
 export default api;
