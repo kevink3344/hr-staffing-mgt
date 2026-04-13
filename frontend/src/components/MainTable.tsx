@@ -628,6 +628,14 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                 <div className="max-w-full mx-auto">
                     <div className="flex justify-between items-start gap-4 mb-6">
                         <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsMenuOpen(true)}
+                                aria-label="Open menu"
+                                className={`h-10 w-10 flex items-center justify-center rounded-2px ${isDark ? 'text-gray-300 hover:text-white hover:bg-slate-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                                title="Menu"
+                            >
+                                <Grip size={20} strokeWidth={2.5} />
+                            </button>
                             <div>
                                 <h1 className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                     Carroll Middle School – 360
@@ -638,14 +646,6 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             </div>
                         </div>
                         <div className="flex gap-2 items-center">
-                            <button
-                                onClick={() => setIsMenuOpen(true)}
-                                aria-label="Open menu"
-                                className={`h-10 w-10 flex items-center justify-center rounded-2px ${isDark ? 'text-gray-300 hover:text-white hover:bg-slate-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
-                                title="Menu"
-                            >
-                                <Grip size={20} strokeWidth={2.5} />
-                            </button>
                             <button
                                 onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                                 aria-label="Toggle pinned only"
