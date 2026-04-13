@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User, Rows3, Rows4 } from 'lucide-react';
+import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User, Rows4 } from 'lucide-react';
 import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass, getRowBgClass, hasFilterColor } from '../utils';
@@ -71,14 +71,14 @@ interface ListTableProps {
     stickyColumns: string[];
     stickyWidths: Record<string, number>;
     columnColors: Record<string, string>;
-    isCompact: boolean;
+    density: 'comfortable' | 'compact' | 'very-compact';
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, isCompact }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
-    const py = isCompact ? 'py-0.5' : 'py-1';
-    const pyH = isCompact ? 'py-1' : 'py-2';
-    const firstPy = isCompact ? 'pt-1 pb-0.5' : 'pt-3 pb-1';
+    const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-1';
+    const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
+    const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-1';
 
     return (
         <div className="w-full">
@@ -199,13 +199,13 @@ interface DataTableProps {
     stickyColumns: string[];
     stickyWidths: Record<string, number>;
     columnColors: Record<string, string>;
-    isCompact: boolean;
+    density: 'comfortable' | 'compact' | 'very-compact';
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, isCompact }: DataTableProps) {
-    const py = isCompact ? 'py-0.5' : 'py-2';
-    const pyH = isCompact ? 'py-1' : 'py-2';
-    const firstPy = isCompact ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density }: DataTableProps) {
+    const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-2';
+    const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
+    const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
 
     return (
         <div className="w-full">
@@ -321,17 +321,18 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         return saved === 'light' ? 'light' : 'dark';
     });
     const isDark = theme === 'dark';
-    const [isCompact, setIsCompact] = useState<boolean>(() => {
-        return localStorage.getItem('mainUiCompact') === 'true';
+    const [density, setDensity] = useState<'comfortable' | 'compact' | 'very-compact'>(() => {
+        return (localStorage.getItem('mainUiDensity') as any) || 'compact';
     });
+    const [showDensitySlider, setShowDensitySlider] = useState(false);
 
     useEffect(() => {
         localStorage.setItem('mainUiTheme', theme);
     }, [theme]);
 
     useEffect(() => {
-        localStorage.setItem('mainUiCompact', String(isCompact));
-    }, [isCompact]);
+        localStorage.setItem('mainUiDensity', density);
+    }, [density]);
 
     // Sync the top scrollbar ghost width with actual table scroll width
     useEffect(() => {
@@ -720,14 +721,38 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                     <Moon size={20} strokeWidth={2.5} />
                                 )}
                             </button>
-                            <button
-                                onClick={() => setIsCompact(!isCompact)}
-                                aria-label="Toggle compact mode"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
-                                title={isCompact ? 'Switch to comfortable' : 'Switch to compact'}
-                            >
-                                {isCompact ? <Rows3 size={20} strokeWidth={2.5} /> : <Rows4 size={20} strokeWidth={2.5} />}
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowDensitySlider(!showDensitySlider)}
+                                    aria-label="Row density"
+                                    className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                                    title="Row density"
+                                >
+                                    <Rows4 size={20} strokeWidth={2.5} />
+                                </button>
+                                {showDensitySlider && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowDensitySlider(false)} />
+                                        <div className={`absolute right-0 top-full mt-1 z-50 rounded-2px border-2 shadow-lg p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-800'}`}>
+                                            <div className="flex flex-col items-center gap-1" style={{ width: '36px', height: '100px' }}>
+                                                {(['comfortable', 'compact', 'very-compact'] as const).map((d) => (
+                                                    <button
+                                                        key={d}
+                                                        onClick={() => { setDensity(d); setShowDensitySlider(false); }}
+                                                        className={`w-full flex-1 rounded-2px text-[9px] font-mono font-bold flex items-center justify-center transition-colors ${density === d
+                                                            ? 'bg-blue-600 text-white'
+                                                            : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                            }`}
+                                                        title={d}
+                                                    >
+                                                        {d === 'comfortable' ? '▁' : d === 'compact' ? '▃' : '▅'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                             <div className="relative group">
                                 <button
                                     aria-label="User"
@@ -917,7 +942,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             stickyColumns={stickyColumns}
                             stickyWidths={stickyWidths}
                             columnColors={columnColors}
-                            isCompact={isCompact}
+                            density={density}
                         />
                     ) : (
                         <DataTable
@@ -933,7 +958,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             stickyColumns={stickyColumns}
                             stickyWidths={stickyWidths}
                             columnColors={columnColors}
-                            isCompact={isCompact}
+                            density={density}
                         />
                     )}
                 </div>
