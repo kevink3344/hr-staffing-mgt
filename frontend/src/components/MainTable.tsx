@@ -337,12 +337,31 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         const container = tableContainerRef.current;
         const inner = topInnerRef.current;
         if (!container || !inner) return;
-        const sync = () => { inner.style.width = container.scrollWidth + 'px'; };
+        let rafId = 0;
+        const sync = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                if (!container || !inner) return;
+                const sw = container.scrollWidth;
+                // Only shrink if there's truly no overflow; otherwise keep the larger value
+                if (sw > container.clientWidth || !inner.style.width) {
+                    inner.style.width = sw + 'px';
+                }
+            });
+        };
         sync();
         const ro = new ResizeObserver(sync);
         ro.observe(container);
-        return () => ro.disconnect();
-    }, [visibleColumns, viewMode]);
+        // Observe the table element inside for row changes
+        const table = container.querySelector('table');
+        if (table) ro.observe(table);
+        const mo = new MutationObserver(sync);
+        mo.observe(container, { childList: true, subtree: true });
+        // Poll briefly after mount to catch late layout
+        const t1 = setTimeout(sync, 100);
+        const t2 = setTimeout(sync, 500);
+        return () => { cancelAnimationFrame(rafId); ro.disconnect(); mo.disconnect(); clearTimeout(t1); clearTimeout(t2); };
+    }, [visibleColumns, viewMode, allRecords.length]);
 
     useEffect(() => {
         loadRecords();
@@ -859,7 +878,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             tableContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
                         }
                     }}
-                    className={`overflow-x-auto rounded-t-2px border-2 border-b-0 border-gray-800 shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}
+                    className={`overflow-x-scroll overflow-y-hidden rounded-t-2px border-2 border-b-0 border-gray-800 shrink-0 relative z-10 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}
                     style={{ height: '17px' }}
                 >
                     <div ref={topInnerRef} style={{ height: '1px' }} />
@@ -916,7 +935,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
             {showScrollTop && (
                 <button
                     onClick={() => tableContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className="fixed bottom-6 right-6 z-40 bg-gray-900 text-white p-3 rounded-full shadow-lg hover:bg-gray-700 transition-colors border-2 border-gray-600"
+                    className="fixed bottom-6 right-6 z-40 bg-gray-900 text-white p-3 rounded-2px shadow-lg hover:bg-gray-700 transition-colors border-2 border-gray-600"
                     title="Scroll to top"
                 >
                     <ArrowUp size={20} strokeWidth={2.5} />
