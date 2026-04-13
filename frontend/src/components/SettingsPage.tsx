@@ -156,16 +156,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     };
 
     const PASTEL_PRESETS = [
-        { label: 'Blue', value: '#e0f2fe' },
-        { label: 'Green', value: '#dcfce7' },
-        { label: 'Yellow', value: '#fef9c3' },
-        { label: 'Pink', value: '#fce7f3' },
-        { label: 'Purple', value: '#f3e8ff' },
-        { label: 'Orange', value: '#ffedd5' },
-        { label: 'Teal', value: '#ccfbf1' },
-        { label: 'Rose', value: '#ffe4e6' },
-        { label: 'Indigo', value: '#e0e7ff' },
-        { label: 'Lime', value: '#ecfccb' },
+        { label: 'Blue', value: '#bfdbfe' },
+        { label: 'Green', value: '#bbf7d0' },
+        { label: 'Yellow', value: '#fef08a' },
+        { label: 'Pink', value: '#fbcfe8' },
+        { label: 'Purple', value: '#e9d5ff' },
+        { label: 'Orange', value: '#fed7aa' },
+        { label: 'Teal', value: '#99f6e4' },
+        { label: 'Red', value: '#fecaca' },
+        { label: 'Indigo', value: '#c7d2fe' },
+        { label: 'Lime', value: '#d9f99d' },
+        { label: 'Amber', value: '#fde68a' },
+        { label: 'Gray', value: '#e5e7eb' },
     ];
 
     if (isLoading) {
@@ -354,11 +356,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                         onChange={(e) => setColorColumn(e.target.value)}
                                         className="w-full bg-gray-800 border-2 border-gray-600 text-white p-2 rounded-2px font-mono"
                                     >
-                                        {STAFF_COLUMNS.map((col) => (
-                                            <option key={col} value={col}>
-                                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
-                                            </option>
-                                        ))}
+                                        <optgroup label="Special Columns">
+                                            <option value="__pin__">[Pin]</option>
+                                            <option value="__edit__">[Edit]</option>
+                                            <option value="__row__">[Row #]</option>
+                                        </optgroup>
+                                        <optgroup label="Data Columns">
+                                            {STAFF_COLUMNS.map((col) => (
+                                                <option key={col} value={col}>
+                                                    {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                                </option>
+                                            ))}
+                                        </optgroup>
                                     </select>
                                 </div>
                                 <div>
@@ -421,7 +430,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                         />
                                         <div>
                                             <div className="font-bold text-lg">
-                                                {COLUMN_LABELS[cc.column_name as keyof typeof COLUMN_LABELS] || cc.column_name}
+                                                {cc.column_name === '__pin__' ? '[Pin]' : cc.column_name === '__edit__' ? '[Edit]' : cc.column_name === '__row__' ? '[Row #]' : (COLUMN_LABELS[cc.column_name as keyof typeof COLUMN_LABELS] || cc.column_name)}
                                             </div>
                                             <div className="text-xs text-gray-400">
                                                 {cc.column_name} · {cc.color} · {cc.is_active ? 'Active' : 'Inactive'}

@@ -112,7 +112,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 onClick={() => setActiveRowId(record.id)}
                                 className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
-                                <td className={`border-r-2 border-gray-300 px-2 py-1 w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()}>
+                                <td className={`border-r-2 border-gray-300 px-2 py-1 w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                     <button
                                         onClick={() => onTogglePin(record.id)}
                                         title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -121,7 +121,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                         <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
                                     </button>
                                 </td>
-                                <td className="border-r-2 border-gray-300 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()}>
+                                <td className="border-r-2 border-gray-300 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()} style={columnColors['__edit__'] ? { backgroundColor: columnColors['__edit__'] } : undefined}>
                                     <div className="flex items-center justify-center gap-1">
                                         <button
                                             onClick={() => { onSaveRow(record.id); setActiveRowId(null); }}
@@ -147,7 +147,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                         </button>
                                     </div>
                                 </td>
-                                <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'}`}>
+                                <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
                                     {idx + 1}
                                 </td>
                                 {visibleColumns.map((col) => {
@@ -230,7 +230,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                 record, activeFilters
                             )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px]`}
                         >
-                            <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
+                            <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                 <button
                                     onClick={() => onTogglePin(record.id)}
                                     title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -239,7 +239,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                     <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
                                 </button>
                             </td>
-                            <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
+                            <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
                                 {idx + 1}
                             </td>
                             {visibleColumns.map((col) => {
