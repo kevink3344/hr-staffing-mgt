@@ -67,7 +67,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 onClick={() => setActiveRowId(record.id)}
                                 className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
-                                <td className="border-r-2 border-gray-800 px-2 py-1 w-10 min-w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                                <td className={`border-r-2 border-gray-800 px-2 py-1 w-10 min-w-10 text-center ${pinnedIds.has(record.id) ? 'bg-amber-100' : ''}`} onClick={(e) => e.stopPropagation()}>
                                     <button
                                         onClick={() => onTogglePin(record.id)}
                                         title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -177,7 +177,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                 record, activeFilters
                             )} border-b-2 border-gray-300 cursor-pointer transition-colors`}
                         >
-                            <td className={`border-r-2 border-gray-800 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
+                            <td className={`border-r-2 border-gray-800 px-2 text-center w-10 min-w-10 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'} ${pinnedIds.has(record.id) ? 'bg-amber-100' : ''}`} onClick={(e) => e.stopPropagation()}>
                                 <button
                                     onClick={() => onTogglePin(record.id)}
                                     title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
@@ -493,8 +493,11 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters }: MainTableP
                     <div className="flex justify-between items-start gap-4 mb-6">
                         <div>
                             <h1 className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                Carroll Middle School – 360 · As of 04/10/2026
+                                Carroll Middle School – 360
                             </h1>
+                            <p className={`text-xs font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Date tracked to 9/01/2026 as of 04/10/2026
+                            </p>
                         </div>
                         <div className="flex gap-2">
                             <button
