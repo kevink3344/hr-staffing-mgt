@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp } from 'lucide-react';
+import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Menu, User } from 'lucide-react';
 import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass, getRowBgClass } from '../utils';
@@ -275,6 +275,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const [selectedRecord, setSelectedRecord] = useState<StaffRecord | null>(null);
     const [isFlyoutOpen, setIsFlyoutOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const loggedInUser = localStorage.getItem('userEmail') || 'demo@staffing.com';
     const [searchTerm, setSearchTerm] = useState('');
     const [currentView, setCurrentView] = useState('All Column View');
     const [views, setViews] = useState<any[]>([]);
@@ -554,6 +556,51 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
 
     return (
         <div className={`h-screen flex flex-col ${isDark ? 'bg-slate-900 text-slate-100' : 'bg-slate-100 text-slate-900'}`}>
+            {/* Left Slide-out Menu */}
+            {isMenuOpen && (
+                <>
+                    <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsMenuOpen(false)} />
+                    <div className={`fixed top-0 left-0 h-full w-72 z-50 border-r-4 flex flex-col ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`}>
+                        <div className="flex items-center justify-between p-6 border-b-2 border-gray-600">
+                            <span className="font-mono font-bold text-lg">Menu</span>
+                            <button onClick={() => setIsMenuOpen(false)} className={`h-8 w-8 flex items-center justify-center rounded-2px ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
+                                <X size={20} strokeWidth={2.5} />
+                            </button>
+                        </div>
+                        <nav className="flex flex-col p-4 gap-1">
+                            <button
+                                onClick={() => { setIsActivityOpen(true); setIsMenuOpen(false); }}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-emerald-300 hover:bg-slate-800' : 'text-emerald-700 hover:bg-gray-100'}`}
+                            >
+                                <Clock size={18} strokeWidth={2.5} />
+                                Activity Feed
+                            </button>
+                            <button
+                                onClick={() => { onNavigateToViews(); setIsMenuOpen(false); }}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-violet-300 hover:bg-slate-800' : 'text-violet-700 hover:bg-gray-100'}`}
+                            >
+                                <Settings2 size={18} strokeWidth={2.5} />
+                                Manage Views
+                            </button>
+                            <button
+                                onClick={() => { setIsImportOpen(true); setIsMenuOpen(false); }}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-orange-300 hover:bg-slate-800' : 'text-orange-700 hover:bg-gray-100'}`}
+                            >
+                                <Download size={18} strokeWidth={2.5} />
+                                Import Excel Data
+                            </button>
+                            <button
+                                onClick={() => { onNavigateToSettings(); setIsMenuOpen(false); }}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-blue-300 hover:bg-slate-800' : 'text-blue-700 hover:bg-gray-100'}`}
+                            >
+                                <Settings size={18} strokeWidth={2.5} />
+                                Settings
+                            </button>
+                        </nav>
+                    </div>
+                </>
+            )}
+
             {/* Header */}
             <header
                 className={`border-b-4 p-6 shrink-0 ${isDark
@@ -563,15 +610,25 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
             >
                 <div className="max-w-full mx-auto">
                     <div className="flex justify-between items-start gap-4 mb-6">
-                        <div>
-                            <h1 className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                Carroll Middle School – 360
-                            </h1>
-                            <p className={`text-xs font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Date tracked to 9/01/2026 as of 04/10/2026
-                            </p>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsMenuOpen(true)}
+                                aria-label="Open menu"
+                                className={`h-10 w-10 flex items-center justify-center rounded-2px ${isDark ? 'text-gray-300 hover:text-white hover:bg-slate-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+                                title="Open menu"
+                            >
+                                <Menu size={22} strokeWidth={2.5} />
+                            </button>
+                            <div>
+                                <h1 className={`text-xl font-bold font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                    Carroll Middle School – 360
+                                </h1>
+                                <p className={`text-xs font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    Date tracked to 9/01/2026 as of 04/10/2026
+                                </p>
+                            </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                             <button
                                 onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                                 aria-label="Toggle pinned only"
@@ -589,42 +646,6 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                 )}
                             </button>
                             <button
-                                onClick={() => setIsImportOpen(true)}
-                                aria-label="Import Excel data"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-orange-300 hover:text-orange-200' : 'text-orange-700 hover:text-orange-600'
-                                    }`}
-                                title="Import Excel data"
-                            >
-                                <Download size={20} strokeWidth={2.5} />
-                            </button>
-                            <button
-                                onClick={() => setIsActivityOpen(true)}
-                                aria-label="Activity feed"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-emerald-300 hover:text-emerald-200' : 'text-emerald-700 hover:text-emerald-600'
-                                    }`}
-                                title="Activity feed"
-                            >
-                                <Clock size={20} strokeWidth={2.5} />
-                            </button>
-                            <button
-                                onClick={onNavigateToSettings}
-                                aria-label="Settings"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-700 hover:text-blue-600'
-                                    }`}
-                                title="Settings"
-                            >
-                                <Settings size={20} strokeWidth={2.5} />
-                            </button>
-                            <button
-                                onClick={onNavigateToViews}
-                                aria-label="Manage views"
-                                className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-700 hover:text-violet-600'
-                                    }`}
-                                title="Manage views"
-                            >
-                                <Settings2 size={20} strokeWidth={2.5} />
-                            </button>
-                            <button
                                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
                                 aria-label="Toggle light/dark surrounding UI"
                                 className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark
@@ -639,6 +660,18 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                     <Moon size={20} strokeWidth={2.5} />
                                 )}
                             </button>
+                            <div className="relative group">
+                                <button
+                                    aria-label="User"
+                                    className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                                    title={loggedInUser}
+                                >
+                                    <User size={20} strokeWidth={2.5} />
+                                </button>
+                                <div className={`absolute right-0 top-full mt-1 px-3 py-2 rounded-2px font-mono text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 ${isDark ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'}`}>
+                                    {loggedInUser}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -785,7 +818,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             tableContainerRef.current.scrollLeft = topScrollRef.current.scrollLeft;
                         }
                     }}
-                    className="overflow-x-auto bg-gray-100 rounded-t-2px border-2 border-b-0 border-gray-800 shrink-0"
+                    className={`overflow-x-auto rounded-t-2px border-2 border-b-0 border-gray-800 shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}
                     style={{ height: '17px' }}
                 >
                     <div ref={topInnerRef} style={{ height: '1px' }} />
