@@ -75,9 +75,11 @@ interface ListTableProps {
     checkedIds: Set<number>;
     onToggleCheck: (id: number) => void;
     onToggleCheckAll: (ids: number[]) => void;
+    columnWidths: Record<string, number>;
+    onColumnResize: (col: string, width: number) => void;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-1';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
@@ -104,10 +106,26 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                         {visibleColumns.map((col) => (
                             <th
                                 key={col}
-                                className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
-                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 192, stickyWidths)}
+                                className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 relative ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
+                                style={{ ...getStickyHeaderStyle(col, visibleColumns, stickyColumns, 192, stickyWidths), ...(columnWidths[col] ? { width: columnWidths[col], minWidth: columnWidths[col], maxWidth: columnWidths[col] } : {}) }}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                <div
+                                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-500 active:bg-blue-500"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        const startX = e.clientX;
+                                        const th = e.currentTarget.parentElement!;
+                                        const startW = th.offsetWidth;
+                                        const onMove = (ev: MouseEvent) => {
+                                            const newW = Math.max(80, startW + ev.clientX - startX);
+                                            onColumnResize(col, newW);
+                                        };
+                                        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+                                        document.addEventListener('mousemove', onMove);
+                                        document.addEventListener('mouseup', onUp);
+                                    }}
+                                />
                             </th>
                         ))}
                     </tr>
@@ -173,7 +191,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                         <td
                                             key={`${record.id}-${col}`}
                                             className={`border-r-2 border-gray-300 text-xs text-gray-900 min-w-40 ${idx === 0 ? firstPy : py} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
-                                            style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}) }}
+                                            style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}), ...(columnWidths[col] ? { width: columnWidths[col], minWidth: columnWidths[col], maxWidth: columnWidths[col] } : {}) }}
                                         >
                                             {isEditable ? (
                                                 <input
@@ -213,9 +231,11 @@ interface DataTableProps {
     checkedIds: Set<number>;
     onToggleCheck: (id: number) => void;
     onToggleCheckAll: (ids: number[]) => void;
+    columnWidths: Record<string, number>;
+    onColumnResize: (col: string, width: number) => void;
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: DataTableProps) {
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-2';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
     const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
@@ -238,10 +258,26 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                         {visibleColumns.map((col) => (
                             <th
                                 key={col}
-                                className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
-                                style={getStickyHeaderStyle(col, visibleColumns, stickyColumns, 128, stickyWidths)}
+                                className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold whitespace-nowrap min-w-40 relative ${stickyColumns.includes(col) ? 'bg-gray-900' : ''}`}
+                                style={{ ...getStickyHeaderStyle(col, visibleColumns, stickyColumns, 128, stickyWidths), ...(columnWidths[col] ? { width: columnWidths[col], minWidth: columnWidths[col], maxWidth: columnWidths[col] } : {}) }}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                <div
+                                    className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-500 active:bg-blue-500"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        const startX = e.clientX;
+                                        const th = e.currentTarget.parentElement!;
+                                        const startW = th.offsetWidth;
+                                        const onMove = (ev: MouseEvent) => {
+                                            const newW = Math.max(80, startW + ev.clientX - startX);
+                                            onColumnResize(col, newW);
+                                        };
+                                        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+                                        document.addEventListener('mousemove', onMove);
+                                        document.addEventListener('mouseup', onUp);
+                                    }}
+                                />
                             </th>
                         ))}
                     </tr>
@@ -282,7 +318,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                             record,
                                             activeFilters
                                         )} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
-                                        style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}) }}
+                                        style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}), ...(columnWidths[col] ? { width: columnWidths[col], minWidth: columnWidths[col], maxWidth: columnWidths[col] } : {}) }}
                                     >
                                         {record[col] || '—'}
                                     </td>
@@ -338,6 +374,12 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
     const [isQueueing, setIsQueueing] = useState(false);
+    const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+        try {
+            const saved = localStorage.getItem('mainUiColumnWidths');
+            return saved ? JSON.parse(saved) : {};
+        } catch { return {}; }
+    });
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const saved = localStorage.getItem('mainUiTheme');
         return saved === 'light' ? 'light' : 'dark';
@@ -548,6 +590,14 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         } finally {
             setIsQueueing(false);
         }
+    };
+
+    const handleColumnResize = (col: string, width: number) => {
+        setColumnWidths(prev => {
+            const next = { ...prev, [col]: width };
+            localStorage.setItem('mainUiColumnWidths', JSON.stringify(next));
+            return next;
+        });
     };
 
     const loadSavedFilters = async () => {
@@ -1021,6 +1071,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             checkedIds={checkedIds}
                             onToggleCheck={toggleCheck}
                             onToggleCheckAll={toggleCheckAll}
+                            columnWidths={columnWidths}
+                            onColumnResize={handleColumnResize}
                         />
                     ) : (
                         <DataTable
@@ -1040,6 +1092,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             checkedIds={checkedIds}
                             onToggleCheck={toggleCheck}
                             onToggleCheckAll={toggleCheckAll}
+                            columnWidths={columnWidths}
+                            onColumnResize={handleColumnResize}
                         />
                     )}
                 </div>
