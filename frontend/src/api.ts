@@ -86,4 +86,13 @@ export const stickyColumnsApi = {
     delete: (id: number) => api.delete(`/sticky-columns/${id}`),
 };
 
+// Column Colors API
+export const columnColorsApi = {
+    getAll: () => api.get('/column-colors'),
+    create: (column_name: string, color: string) => api.post('/column-colors', { column_name, color }),
+    update: (id: number, column_name: string, color: string) => api.put(`/column-colors/${id}`, { column_name, color }),
+    toggle: (id: number) => api.patch(`/column-colors/${id}/toggle`),
+    delete: (id: number) => api.delete(`/column-colors/${id}`),
+};
+
 export default api;

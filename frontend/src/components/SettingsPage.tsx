@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { stickyColumnsApi } from '../api';
+import { stickyColumnsApi, columnColorsApi } from '../api';
 import { STAFF_COLUMNS, COLUMN_LABELS } from '../constants';
 
 interface SettingsPageProps {
@@ -14,8 +14,16 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
     const [newWidth, setNewWidth] = useState<number>(220);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Column Colors state
+    const [columnColors, setColumnColors] = useState<any[]>([]);
+    const [isCreatingColor, setIsCreatingColor] = useState(false);
+    const [editingColorId, setEditingColorId] = useState<number | null>(null);
+    const [colorColumn, setColorColumn] = useState<string>(STAFF_COLUMNS[0]);
+    const [colorValue, setColorValue] = useState<string>('#e0f2fe');
+
     useEffect(() => {
         loadStickyColumns();
+        loadColumnColors();
     }, []);
 
     const loadStickyColumns = async () => {
@@ -82,6 +90,83 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
             }
         }
     };
+
+    // Column Colors handlers
+    const loadColumnColors = async () => {
+        try {
+            const res = await columnColorsApi.getAll();
+            setColumnColors(res.data);
+        } catch (err) {
+            console.error('Failed to load column colors:', err);
+        }
+    };
+
+    const resetColorForm = () => {
+        setIsCreatingColor(false);
+        setEditingColorId(null);
+        setColorColumn(STAFF_COLUMNS[0]);
+        setColorValue('#e0f2fe');
+    };
+
+    const handleEditColor = (cc: any) => {
+        setEditingColorId(cc.id);
+        setIsCreatingColor(true);
+        setColorColumn(cc.column_name);
+        setColorValue(cc.color);
+    };
+
+    const handleSaveColor = async () => {
+        try {
+            if (editingColorId) {
+                await columnColorsApi.update(editingColorId, colorColumn, colorValue);
+            } else {
+                await columnColorsApi.create(colorColumn, colorValue);
+            }
+            loadColumnColors();
+            resetColorForm();
+        } catch (err: any) {
+            console.error('Failed to save column color:', err);
+            if (err?.response?.status === 500 && err?.response?.data?.error?.includes('UNIQUE')) {
+                alert('This column already has a color assigned');
+            } else {
+                alert('Failed to save column color');
+            }
+        }
+    };
+
+    const handleToggleColor = async (id: number) => {
+        try {
+            await columnColorsApi.toggle(id);
+            loadColumnColors();
+        } catch (err) {
+            console.error('Failed to toggle column color:', err);
+        }
+    };
+
+    const handleDeleteColor = async (id: number) => {
+        if (confirm('Delete this column color?')) {
+            try {
+                await columnColorsApi.delete(id);
+                loadColumnColors();
+            } catch (err) {
+                console.error('Failed to delete column color:', err);
+                alert('Failed to delete column color');
+            }
+        }
+    };
+
+    const PASTEL_PRESETS = [
+        { label: 'Blue', value: '#e0f2fe' },
+        { label: 'Green', value: '#dcfce7' },
+        { label: 'Yellow', value: '#fef9c3' },
+        { label: 'Pink', value: '#fce7f3' },
+        { label: 'Purple', value: '#f3e8ff' },
+        { label: 'Orange', value: '#ffedd5' },
+        { label: 'Teal', value: '#ccfbf1' },
+        { label: 'Rose', value: '#ffe4e6' },
+        { label: 'Indigo', value: '#e0e7ff' },
+        { label: 'Lime', value: '#ecfccb' },
+    ];
 
     if (isLoading) {
         return (
@@ -227,6 +312,151 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(sc.id)}
+                                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-red-800 text-sm"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                {/* Column Colors Section */}
+                <section className="mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-blue-400">Column Colors</h2>
+                            <p className="text-sm text-gray-400 mt-1">Set pastel background colors for columns. Row filter colors take precedence.</p>
+                        </div>
+                        {!isCreatingColor && (
+                            <button
+                                onClick={() => { setIsCreatingColor(true); setEditingColorId(null); setColorColumn(STAFF_COLUMNS[0]); }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                            >
+                                + Add Column Color
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Create/Edit Color Form */}
+                    {isCreatingColor && (
+                        <div className="border-2 border-blue-600 bg-blue-900/20 rounded-2px p-4 mb-4">
+                            <h3 className="text-lg font-bold mb-3">
+                                {editingColorId ? 'Edit Column Color' : 'Add Column Color'}
+                            </h3>
+                            <div className="flex items-end gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-sm text-gray-400 mb-1">Column</label>
+                                    <select
+                                        value={colorColumn}
+                                        onChange={(e) => setColorColumn(e.target.value)}
+                                        className="w-full bg-gray-800 border-2 border-gray-600 text-white p-2 rounded-2px font-mono"
+                                    >
+                                        {STAFF_COLUMNS.map((col) => (
+                                            <option key={col} value={col}>
+                                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Color</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex gap-1">
+                                            {PASTEL_PRESETS.map((p) => (
+                                                <button
+                                                    key={p.value}
+                                                    onClick={() => setColorValue(p.value)}
+                                                    className={`w-6 h-6 rounded-2px border-2 ${colorValue === p.value ? 'border-blue-400 scale-110' : 'border-gray-600'}`}
+                                                    style={{ backgroundColor: p.value }}
+                                                    title={p.label}
+                                                />
+                                            ))}
+                                        </div>
+                                        <input
+                                            type="color"
+                                            value={colorValue}
+                                            onChange={(e) => setColorValue(e.target.value)}
+                                            className="w-8 h-8 rounded-2px border-2 border-gray-600 cursor-pointer bg-transparent"
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleSaveColor}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                                >
+                                    {editingColorId ? 'Update' : 'Add'}
+                                </button>
+                                <button
+                                    onClick={resetColorForm}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Column Colors List */}
+                    {columnColors.length === 0 ? (
+                        <div className="border-2 border-gray-700 rounded-2px p-8 text-center text-gray-500">
+                            No column colors configured. Add one to highlight entire columns with a pastel background.
+                        </div>
+                    ) : (
+                        <div className="grid gap-3">
+                            {columnColors.map((cc) => (
+                                <div
+                                    key={cc.id}
+                                    className={`border-2 rounded-2px p-4 flex items-center justify-between ${cc.is_active
+                                        ? 'border-blue-600 bg-blue-900/20'
+                                        : 'border-gray-700 bg-gray-900/20 opacity-60'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div
+                                            className="w-8 h-8 rounded-2px border-2 border-gray-500"
+                                            style={{ backgroundColor: cc.color }}
+                                        />
+                                        <div>
+                                            <div className="font-bold text-lg">
+                                                {COLUMN_LABELS[cc.column_name as keyof typeof COLUMN_LABELS] || cc.column_name}
+                                            </div>
+                                            <div className="text-xs text-gray-400">
+                                                {cc.column_name} · {cc.color} · {cc.is_active ? 'Active' : 'Inactive'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex gap-1 border-2 border-gray-600 rounded-2px p-1 bg-slate-900">
+                                            <button
+                                                onClick={() => !cc.is_active && handleToggleColor(cc.id)}
+                                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${cc.is_active
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                    }`}
+                                            >
+                                                Active
+                                            </button>
+                                            <button
+                                                onClick={() => cc.is_active && handleToggleColor(cc.id)}
+                                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${!cc.is_active
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                    }`}
+                                            >
+                                                Inactive
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={() => handleEditColor(cc)}
+                                            className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-yellow-800 text-sm"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteColor(cc.id)}
                                             className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-red-800 text-sm"
                                         >
                                             Delete

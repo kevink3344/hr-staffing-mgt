@@ -92,3 +92,22 @@ export function getCellColorClass(
 
     return '';
 }
+
+// Check if a record has any active row or cell filter color
+export function hasFilterColor(
+    column: string,
+    record: any,
+    activeFilters?: ActiveFilter[]
+): boolean {
+    if (!activeFilters) return false;
+    // Check row-level filters
+    for (const f of activeFilters) {
+        if (f.highlight_type === 'cell') continue;
+        if (f.color && FILTER_ROW_COLORS[f.color] && recordMatchesFilter(record, f)) return true;
+    }
+    // Check cell-level filters for this column
+    for (const f of activeFilters) {
+        if (f.highlight_type === 'cell' && f.column === column && f.color && FILTER_ROW_COLORS[f.color] && recordMatchesFilter(record, f)) return true;
+    }
+    return false;
+}

@@ -15,6 +15,7 @@ import filtersRoutes from './routes/filters.js';
 import pinsRoutes from './routes/pins.js';
 import commentsRoutes from './routes/comments.js';
 import stickyColumnsRoutes from './routes/stickyColumns.js';
+import columnColorsRoutes from './routes/columnColors.js';
 
 config();
 
@@ -75,8 +76,8 @@ const swaggerOptions = {
                         mo_available: { type: 'string', nullable: true },
                         mo_used: { type: 'string', nullable: true },
                         track: { type: 'string', nullable: true },
-                        last_person_name: { type: 'string', nullable: true },
-                        last_person_no: { type: 'string', nullable: true },
+                        last_person_name: { type: 'string', nullable: true, description: 'Future Employee Name' },
+                        last_person_no: { type: 'string', nullable: true, description: 'Future Employee No.' },
                         effective_date: { type: 'string', nullable: true, description: 'YYYY-MM-DD' },
                         classroom_assign: { type: 'string', nullable: true },
                         pos_no_new: { type: 'string', nullable: true },
@@ -209,6 +210,7 @@ app.use('/api/filters', filtersRoutes);
 app.use('/api/pins', pinsRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/api/sticky-columns', stickyColumnsRoutes);
+app.use('/api/column-colors', columnColorsRoutes);
 
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url);

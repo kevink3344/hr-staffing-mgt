@@ -244,6 +244,19 @@ export async function initializeDatabase(): Promise<void> {
         await database.exec("ALTER TABLE sticky_columns ADD COLUMN column_width INTEGER NOT NULL DEFAULT 220");
     }
 
+    // ColumnColors table (pastel background colors per column)
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS column_colors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      column_name TEXT NOT NULL,
+      color TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(column_name, created_by)
+    )
+  `);
+
     console.log('✅ Database initialized');
 }
 

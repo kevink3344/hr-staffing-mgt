@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User } from 'lucide-react';
-import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi } from '../api';
+import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
-import { getRowColorClass, getCellColorClass, getRowBgClass } from '../utils';
+import { getRowColorClass, getCellColorClass, getRowBgClass, hasFilterColor } from '../utils';
 import { EditFlyout } from './EditFlyout';
 import { ImportModal } from './ImportModal';
 import { ActivityFeed } from './ActivityFeed';
@@ -70,9 +70,10 @@ interface ListTableProps {
     activeFilters: FilterChip[];
     stickyColumns: string[];
     stickyWidths: Record<string, number>;
+    columnColors: Record<string, string>;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
 
     return (
@@ -153,11 +154,12 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     const isEditable = isActive && (EDITABLE_FIELDS as readonly string[]).includes(col);
                                     const cellValue = edits[col] !== undefined ? edits[col] : (record[col] ?? '');
                                     const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 152, stickyWidths);
+                                    const colColor = columnColors[col] && !hasFilterColor(col, record, activeFilters) ? columnColors[col] : undefined;
                                     return (
                                         <td
                                             key={`${record.id}-${col}`}
                                             className={`border-r-2 border-gray-300 text-xs text-gray-900 min-w-40 ${idx === 0 ? 'pt-3 pb-1' : 'py-1'} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
-                                            style={stickyStyle}
+                                            style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}) }}
                                         >
                                             {isEditable ? (
                                                 <input
@@ -192,9 +194,10 @@ interface DataTableProps {
     activeFilters: FilterChip[];
     stickyColumns: string[];
     stickyWidths: Record<string, number>;
+    columnColors: Record<string, string>;
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors }: DataTableProps) {
     return (
         <div className="w-full">
             <table className="w-full font-mono border-collapse">
@@ -241,6 +244,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                             </td>
                             {visibleColumns.map((col) => {
                                 const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 88, stickyWidths);
+                                const colColor = columnColors[col] && !hasFilterColor(col, record, activeFilters) ? columnColors[col] : undefined;
                                 return (
                                     <td
                                         key={`${record.id}-${col}`}
@@ -249,7 +253,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                             record,
                                             activeFilters
                                         )} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
-                                        style={stickyStyle}
+                                        style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}) }}
                                     >
                                         {record[col] || '—'}
                                     </td>
@@ -300,6 +304,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const [showPinnedOnly, setShowPinnedOnly] = useState(false);
     const [stickyColumns, setStickyColumns] = useState<string[]>([]);
     const [stickyWidths, setStickyWidths] = useState<Record<string, number>>({});
+    const [columnColors, setColumnColors] = useState<Record<string, string>>({});
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
         const saved = localStorage.getItem('mainUiTheme');
@@ -329,6 +334,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         loadSavedFilters();
         loadPins();
         loadStickyColumns();
+        loadColumnColors();
     }, []);
 
     useEffect(() => {
@@ -415,6 +421,17 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
             setStickyWidths(widths);
         } catch (err) {
             console.error('Failed to load sticky columns:', err);
+        }
+    };
+
+    const loadColumnColors = async () => {
+        try {
+            const res = await columnColorsApi.getAll();
+            const colorMap: Record<string, string> = {};
+            res.data.filter((cc: any) => cc.is_active).forEach((cc: any) => { colorMap[cc.column_name] = cc.color; });
+            setColumnColors(colorMap);
+        } catch (err) {
+            console.error('Failed to load column colors:', err);
         }
     };
 
@@ -848,6 +865,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
                             stickyColumns={stickyColumns}
                             stickyWidths={stickyWidths}
+                            columnColors={columnColors}
                         />
                     ) : (
                         <DataTable
@@ -862,6 +880,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
                             stickyColumns={stickyColumns}
                             stickyWidths={stickyWidths}
+                            columnColors={columnColors}
                         />
                     )}
                 </div>
