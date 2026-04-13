@@ -115,9 +115,9 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     <button
                                         onClick={() => onTogglePin(record.id)}
                                         title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
-                                        className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-amber-500' : 'text-gray-300 hover:text-gray-500'}`}
+                                        className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-red-900' : 'text-gray-300 hover:text-gray-500'}`}
                                     >
-                                        <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#f59e0b' : 'none'} />
+                                        <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
                                     </button>
                                 </td>
                                 <td className="border-r-2 border-gray-300 px-2 py-1 w-16 min-w-16" onClick={(e) => e.stopPropagation()}>
@@ -231,9 +231,9 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                 <button
                                     onClick={() => onTogglePin(record.id)}
                                     title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
-                                    className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-amber-500' : 'text-gray-300 hover:text-gray-500'}`}
+                                    className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-red-900' : 'text-gray-300 hover:text-gray-500'}`}
                                 >
-                                    <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#f59e0b' : 'none'} />
+                                    <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
                                 </button>
                             </td>
                             <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? 'pt-3 pb-2' : 'py-2'}`}>
@@ -633,14 +633,14 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                 onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                                 aria-label="Toggle pinned only"
                                 className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl relative ${showPinnedOnly
-                                    ? 'text-amber-400'
+                                    ? 'text-red-800'
                                     : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
                                     }`}
                                 title={showPinnedOnly ? 'Show all records' : 'Show pinned only'}
                             >
                                 <Pin size={20} strokeWidth={2.5} fill={showPinnedOnly ? 'currentColor' : 'none'} />
                                 {pinnedIds.size > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                    <span className="absolute -top-1 -right-1 bg-red-800 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                                         {pinnedIds.size}
                                     </span>
                                 )}
