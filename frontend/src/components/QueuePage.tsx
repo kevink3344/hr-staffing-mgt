@@ -166,7 +166,7 @@ export function QueuePage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
                                         <td className={`px-3 py-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{idx + 1}</td>
                                         {editingId === item.id ? (
                                             <>
-                                                <td className="px-3 py-2"><button onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit">{item.employee_name}</button></td>
+                                                <td className="px-3 py-2"><button type="button" onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit">{item.employee_name}</button></td>
                                                 <td className="px-3 py-2">{item.employee_no}</td>
                                                 <td className="px-3 py-2">{item.position_name}</td>
                                                 <td className="px-3 py-2">{item.pos_no}</td>
@@ -174,7 +174,7 @@ export function QueuePage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
                                             </>
                                         ) : (
                                             <>
-                                                <td className="px-3 py-2"><button onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit">{item.employee_name}</button></td>
+                                                <td className="px-3 py-2"><button type="button" onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit">{item.employee_name}</button></td>
                                                 <td className="px-3 py-2">{item.employee_no}</td>
                                                 <td className="px-3 py-2">{item.position_name}</td>
                                                 <td className="px-3 py-2">{item.pos_no}</td>
