@@ -275,7 +275,7 @@ export async function initializeDatabase(): Promise<void> {
     )
   `);
 
-    await db.exec(`
+    await database.exec(`
     CREATE TABLE IF NOT EXISTS user_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_email TEXT NOT NULL,
