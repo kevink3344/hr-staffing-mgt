@@ -476,7 +476,93 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                         </div>
                     )}
                 </section>
+
+                {/* Font Settings Section */}
+                <FontSettings />
             </main>
         </div>
+    );
+}
+
+const FONT_OPTIONS = {
+    text: [
+        { label: 'JetBrains Mono', value: "'JetBrains Mono', monospace" },
+        { label: 'Inter', value: "'Inter', sans-serif" },
+        { label: 'IBM Plex Sans', value: "'IBM Plex Sans', sans-serif" },
+        { label: 'Source Sans 3', value: "'Source Sans 3', sans-serif" },
+        { label: 'System Default', value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+    ],
+    numbers: [
+        { label: 'JetBrains Mono', value: "'JetBrains Mono', monospace" },
+        { label: 'Fira Code', value: "'Fira Code', monospace" },
+        { label: 'IBM Plex Mono', value: "'IBM Plex Mono', monospace" },
+        { label: 'System Monospace', value: 'monospace' },
+    ],
+};
+
+function FontSettings() {
+    const [textFont, setTextFont] = useState(() => localStorage.getItem('fontText') || FONT_OPTIONS.text[0].value);
+    const [numbersFont, setNumbersFont] = useState(() => localStorage.getItem('fontNumbers') || FONT_OPTIONS.numbers[0].value);
+
+    useEffect(() => {
+        document.documentElement.style.setProperty('--font-text', textFont);
+        document.documentElement.style.setProperty('--font-numbers', numbersFont);
+    }, [textFont, numbersFont]);
+
+    const handleTextFont = (value: string) => {
+        setTextFont(value);
+        localStorage.setItem('fontText', value);
+    };
+
+    const handleNumbersFont = (value: string) => {
+        setNumbersFont(value);
+        localStorage.setItem('fontNumbers', value);
+    };
+
+    return (
+        <section className="mb-8">
+            <div className="mb-4">
+                <h2 className="text-xl font-bold text-blue-400">Font Settings</h2>
+                <p className="text-sm text-gray-400 mt-1">Choose fonts for text and numeric columns</p>
+            </div>
+            <div className="bg-gray-800 border-2 border-gray-700 rounded-2px p-6 space-y-6">
+                <div>
+                    <label className="block text-xs font-bold tracking-wider mb-2 text-gray-300">TEXT FONT</label>
+                    <select
+                        value={textFont}
+                        onChange={(e) => handleTextFont(e.target.value)}
+                        className="w-full max-w-md px-3 py-2 rounded-2px border-2 border-gray-600 bg-gray-700 text-white text-sm outline-none focus:border-blue-500"
+                    >
+                        {FONT_OPTIONS.text.map((f) => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                        ))}
+                    </select>
+                    <p className="mt-2 text-xs text-gray-400" style={{ fontFamily: textFont }}>
+                        Preview: The quick brown fox jumps over the lazy dog
+                    </p>
+                </div>
+                <div>
+                    <label className="block text-xs font-bold tracking-wider mb-2 text-gray-300">NUMBERS / CODE FONT</label>
+                    <select
+                        value={numbersFont}
+                        onChange={(e) => handleNumbersFont(e.target.value)}
+                        className="w-full max-w-md px-3 py-2 rounded-2px border-2 border-gray-600 bg-gray-700 text-white text-sm outline-none focus:border-blue-500"
+                    >
+                        {FONT_OPTIONS.numbers.map((f) => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                        ))}
+                    </select>
+                    <p className="mt-2 text-xs text-gray-400" style={{ fontFamily: numbersFont }}>
+                        Preview: 0123456789 $1,234.56 #A1B2C3
+                    </p>
+                </div>
+                <button
+                    onClick={() => { handleTextFont(FONT_OPTIONS.text[0].value); handleNumbersFont(FONT_OPTIONS.numbers[0].value); }}
+                    className="text-xs font-bold text-gray-400 hover:text-white"
+                >
+                    Reset to defaults
+                </button>
+            </div>
+        </section>
     );
 }

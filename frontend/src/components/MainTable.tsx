@@ -7,6 +7,12 @@ import { EditFlyout } from './EditFlyout';
 import { ImportModal } from './ImportModal';
 import { ActivityFeed } from './ActivityFeed';
 
+const NUMERIC_COLUMNS = new Set([
+    'emp_no', 'contract_renewal_yr', 'emp_percent', 'pos_no', 'account_code',
+    'mo_available', 'mo_used', 'mos', 'pos_no_new', 'emp_percent_new',
+    'pay_grade', 'step', 'last_person_no',
+]);
+
 interface FilterChip {
     id?: number;  // set for DB-persisted filters, absent for legend toggles
     column: string;
@@ -190,7 +196,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     return (
                                         <td
                                             key={`${record.id}-${col}`}
-                                            className={`border-r-2 border-gray-300 text-xs text-gray-900 min-w-40 ${idx === 0 ? firstPy : py} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
+                                            className={`border-r-2 border-gray-300 text-xs text-gray-900 min-w-40 ${idx === 0 ? firstPy : py} ${isEditable ? 'border-2 border-dashed border-blue-400 bg-blue-50' : ''} ${getCellColorClass(col, record, activeFilters)} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''} ${NUMERIC_COLUMNS.has(col) ? 'font-numbers' : ''}`}
                                             style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}), ...(columnWidths[col] ? { width: columnWidths[col], minWidth: columnWidths[col], maxWidth: columnWidths[col] } : {}) }}
                                         >
                                             {isEditable ? (
@@ -317,7 +323,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                                             col,
                                             record,
                                             activeFilters
-                                        )} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''}`}
+                                        )} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''} ${NUMERIC_COLUMNS.has(col) ? 'font-numbers' : ''}`}
                                         style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}), ...(columnWidths[col] ? { width: columnWidths[col], minWidth: columnWidths[col], maxWidth: columnWidths[col] } : {}) }}
                                     >
                                         {record[col] || '—'}
@@ -389,6 +395,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         return (localStorage.getItem('mainUiDensity') as any) || 'compact';
     });
     const [showDensitySlider, setShowDensitySlider] = useState(false);
+
 
     useEffect(() => {
         localStorage.setItem('mainUiTheme', theme);
@@ -859,7 +866,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                                             }`}
                                                         title={d}
                                                     >
-                                                        {d === 'comfortable' ? 'I' : d === 'compact' ? 'II' : 'III'}
+                                                        {d === 'comfortable' ? '▁' : d === 'compact' ? '▃' : '▅'}
                                                     </button>
                                                 ))}
                                             </div>

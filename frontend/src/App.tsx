@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MainTable } from './components/MainTable'
 import { ViewsPage } from './components/ViewsPage'
 import { FiltersPage } from './components/FiltersPage'
@@ -7,6 +7,13 @@ import { QueuePage } from './components/QueuePage'
 
 function App() {
     const [currentPage, setCurrentPage] = useState<'main' | 'views' | 'filters' | 'settings' | 'queue'>('main')
+
+    useEffect(() => {
+        const textFont = localStorage.getItem('fontText');
+        const numbersFont = localStorage.getItem('fontNumbers');
+        if (textFont) document.documentElement.style.setProperty('--font-text', textFont);
+        if (numbersFont) document.documentElement.style.setProperty('--font-numbers', numbersFont);
+    }, []);
 
     return (
         <>

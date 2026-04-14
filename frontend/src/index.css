@@ -2,11 +2,20 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+:root {
+    --font-text: 'JetBrains Mono', monospace;
+    --font-numbers: 'JetBrains Mono', monospace;
+}
+
 * {
     border-radius: 2px;
 }
 
 body {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-text);
     @apply antialiased;
+}
+
+.font-numbers {
+    font-family: var(--font-numbers);
 }

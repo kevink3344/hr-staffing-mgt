@@ -11,7 +11,7 @@ export default {
         '2px': '2px',
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'monospace'],
+        mono: ['var(--font-text)'],
       },
     },
   },
