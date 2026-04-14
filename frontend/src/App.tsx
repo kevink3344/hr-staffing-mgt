@@ -5,11 +5,27 @@ import { FiltersPage } from './components/FiltersPage'
 import { SettingsPage } from './components/SettingsPage'
 import { QueuePage } from './components/QueuePage'
 import { SignInPage } from './components/SignInPage'
+import { userSettingsApi } from './api'
 
 function App() {
     const [currentPage, setCurrentPage] = useState<'main' | 'views' | 'filters' | 'settings' | 'queue'>('main')
     const [signedIn, setSignedIn] = useState(() => !!localStorage.getItem('userName'))
+    const [settingsReady, setSettingsReady] = useState(false)
     const [initialRecordId, setInitialRecordId] = useState<number | undefined>(undefined)
+
+    // Load user settings from API after sign-in
+    useEffect(() => {
+        if (signedIn) {
+            userSettingsApi.getAll().then((res) => {
+                const s = res.data;
+                if (s.theme) localStorage.setItem('mainUiTheme', s.theme);
+                if (s.density) localStorage.setItem('mainUiDensity', s.density);
+                setSettingsReady(true);
+            }).catch(() => setSettingsReady(true));
+        } else {
+            setSettingsReady(false);
+        }
+    }, [signedIn]);
 
     useEffect(() => {
         const textFont = localStorage.getItem('fontText');
@@ -20,6 +36,10 @@ function App() {
 
     if (!signedIn) {
         return <SignInPage onSignIn={() => setSignedIn(true)} />;
+    }
+
+    if (!settingsReady) {
+        return <div className="h-screen flex items-center justify-center bg-slate-900 text-gray-400 font-mono">Loading...</div>;
     }
 
     const handleSignOut = () => { localStorage.removeItem('userName'); localStorage.removeItem('userEmail'); setSignedIn(false); };

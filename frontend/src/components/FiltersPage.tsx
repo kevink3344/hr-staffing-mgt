@@ -163,7 +163,7 @@ export function FiltersPage({ onNavigateToMain, onNavigateToViews, onNavigateToF
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 font-mono">
+        <div className={`min-h-screen font-mono ${localStorage.getItem('mainUiTheme') === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-900 text-slate-100'}`}>
             <AppHeader
                 title="Manage Filters"
                 onNavigateToMain={onNavigateToMain}

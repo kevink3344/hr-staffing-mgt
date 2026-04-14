@@ -20,6 +20,7 @@ export function ViewsPage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const isAdmin = localStorage.getItem('userEmail') === 'admin@staffing.com';
+    const isDark = localStorage.getItem('mainUiTheme') !== 'light';
 
     useEffect(() => {
         loadViews();
@@ -120,7 +121,7 @@ export function ViewsPage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 font-mono">
+        <div className={`min-h-screen font-mono ${localStorage.getItem('mainUiTheme') === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-900 text-slate-100'}`}>
             <AppHeader
                 title="Manage Views"
                 onNavigateToMain={onNavigateToMain}
@@ -142,7 +143,7 @@ export function ViewsPage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
                             .map((view) => (
                                 <div
                                     key={view.id}
-                                    className="bg-gray-800 border-2 border-gray-700 rounded-2px p-4"
+                                    className={`border-2 rounded-2px p-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="font-bold text-lg">{view.name}</div>
@@ -255,7 +256,7 @@ export function ViewsPage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
                             .map((view) => (
                                 <div
                                     key={view.id}
-                                    className="bg-gray-800 border-2 border-gray-700 rounded-2px p-4"
+                                    className={`border-2 rounded-2px p-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <div>

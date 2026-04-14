@@ -48,8 +48,8 @@ export function AppHeader({
     useEffect(() => {
         userSettingsApi.getAll().then((res) => {
             const s = res.data;
-            if (s.theme) setThemeState(s.theme as 'dark' | 'light');
-            if (s.density) setDensityState(s.density as any);
+            if (s.theme) { setThemeState(s.theme as 'dark' | 'light'); localStorage.setItem('mainUiTheme', s.theme); }
+            if (s.density) { setDensityState(s.density as any); localStorage.setItem('mainUiDensity', s.density); }
             setSettingsLoaded(true);
         }).catch(() => setSettingsLoaded(true));
     }, []);
@@ -67,6 +67,7 @@ export function AppHeader({
 
     const setTheme = (t: 'dark' | 'light') => {
         setThemeState(t);
+        localStorage.setItem('mainUiTheme', t);
         userSettingsApi.set('theme', t).catch(() => { });
     };
 
@@ -75,6 +76,7 @@ export function AppHeader({
         if (onDensityChange) onDensityChange(d);
         else {
             setDensityState(d);
+            localStorage.setItem('mainUiDensity', d);
             userSettingsApi.set('density', d).catch(() => { });
         }
     };

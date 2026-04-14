@@ -145,68 +145,87 @@ export function QueuePage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
                 ) : items.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">No queue items{statusFilter ? ` with status "${statusFilter}"` : ''}.</p>
                 ) : (
-                    <div className={`overflow-x-auto border-2 rounded-2px ${isDark ? 'border-gray-700' : 'border-gray-800'}`}>
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-900 text-white">
-                                <tr>
-                                    <th className="text-left px-3 py-2 font-bold">#</th>
-                                    <th className="text-left px-3 py-2 font-bold">Future Employee</th>
-                                    <th className="text-left px-3 py-2 font-bold">Emp No.</th>
-                                    <th className="text-left px-3 py-2 font-bold">Position Name</th>
-                                    <th className="text-left px-3 py-2 font-bold">Pos No.</th>
-                                    <th className="text-left px-3 py-2 font-bold">Effective Date</th>
-                                    <th className="text-left px-3 py-2 font-bold">Status</th>
-                                    <th className="text-left px-3 py-2 font-bold">Created</th>
-                                    <th className="text-left px-3 py-2 font-bold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {items.map((item, idx) => (
-                                    <tr key={item.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-300'} ${idx % 2 === 0 ? (isDark ? 'bg-gray-900' : 'bg-white') : (isDark ? 'bg-gray-800' : 'bg-gray-50')} ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
-                                        <td className={`px-3 py-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{idx + 1}</td>
-                                        {editingId === item.id ? (
-                                            <>
-                                                <td className="px-3 py-2"><button type="button" onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit">{item.employee_name}</button></td>
-                                                <td className="px-3 py-2">{item.employee_no}</td>
-                                                <td className="px-3 py-2">{item.position_name}</td>
-                                                <td className="px-3 py-2">{item.pos_no}</td>
-                                                <td className="px-3 py-2">{item.effective_date}</td>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <td className="px-3 py-2"><button type="button" onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit">{item.employee_name}</button></td>
-                                                <td className="px-3 py-2">{item.employee_no}</td>
-                                                <td className="px-3 py-2">{item.position_name}</td>
-                                                <td className="px-3 py-2">{item.pos_no}</td>
-                                                <td className="px-3 py-2">{item.effective_date}</td>
-                                            </>
-                                        )}
-                                        <td className="px-3 py-2">
-                                            <select
-                                                value={item.status}
-                                                onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                                                className={`border rounded-2px px-2 py-1 font-mono text-xs font-bold ${STATUS_COLORS[item.status] || ''}`}
-                                            >
-                                                {STATUSES.map(s => (
-                                                    <option key={s} value={s}>{s}</option>
-                                                ))}
-                                            </select>
-                                        </td>
-                                        <td className={`px-3 py-2 whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                            {new Date(item.created_at).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-3 py-2">
-                                            <div className="flex gap-1">
+                    <>
+                        {/* Desktop table */}
+                        <div className={`hidden md:block overflow-x-auto border-2 rounded-2px ${isDark ? 'border-gray-700' : 'border-gray-800'}`}>
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-900 text-white">
+                                    <tr>
+                                        <th className="text-left px-3 py-2 font-bold">#</th>
+                                        <th className="text-left px-3 py-2 font-bold">Future Employee</th>
+                                        <th className="text-left px-3 py-2 font-bold">Emp No.</th>
+                                        <th className="text-left px-3 py-2 font-bold">Position Name</th>
+                                        <th className="text-left px-3 py-2 font-bold">Pos No.</th>
+                                        <th className="text-left px-3 py-2 font-bold">Effective Date</th>
+                                        <th className="text-left px-3 py-2 font-bold">Status</th>
+                                        <th className="text-left px-3 py-2 font-bold">Created</th>
+                                        <th className="text-left px-3 py-2 font-bold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {items.map((item, idx) => (
+                                        <tr key={item.id} className={`border-t ${isDark ? 'border-gray-700' : 'border-gray-300'} ${idx % 2 === 0 ? (isDark ? 'bg-gray-900' : 'bg-white') : (isDark ? 'bg-gray-800' : 'bg-gray-50')} ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                                            <td className={`px-3 py-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{idx + 1}</td>
+                                            <td className="px-3 py-2"><button type="button" onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit">{item.employee_name}</button></td>
+                                            <td className="px-3 py-2">{item.employee_no}</td>
+                                            <td className="px-3 py-2">{item.position_name}</td>
+                                            <td className="px-3 py-2">{item.pos_no}</td>
+                                            <td className="px-3 py-2">{item.effective_date || 'None'}</td>
+                                            <td className="px-3 py-2">
+                                                <select
+                                                    value={item.status}
+                                                    onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                                                    className={`border rounded-2px px-2 py-1 font-mono text-xs font-bold ${STATUS_COLORS[item.status] || ''}`}
+                                                >
+                                                    {STATUSES.map(s => (
+                                                        <option key={s} value={s}>{s}</option>
+                                                    ))}
+                                                </select>
+                                            </td>
+                                            <td className={`px-3 py-2 whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                {new Date(item.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-3 py-2">
                                                 <button onClick={() => handleDelete(item.id)} className="p-1 text-red-600 hover:text-red-800" title="Delete">
                                                     <Trash2 size={16} strokeWidth={2.5} />
                                                 </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile card layout */}
+                        <div className="md:hidden space-y-3">
+                            {items.map((item, idx) => (
+                                <div key={item.id} className={`border-2 rounded-2px p-3 ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-300 bg-white'}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <button type="button" onClick={() => onGoToRecord?.(item.staff_record_id)} className="text-blue-500 hover:text-blue-400 underline cursor-pointer bg-transparent border-none p-0 font-inherit font-bold text-base">{item.employee_name}</button>
+                                        <button onClick={() => handleDelete(item.id)} className="p-1 text-red-600 hover:text-red-800" title="Delete">
+                                            <Trash2 size={16} strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                    <div className={`text-xs space-y-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        <div>Emp No: {item.employee_no || 'None'}</div>
+                                        <div>Position Name: {item.position_name || 'None'}</div>
+                                        <div>Pos No.: {item.pos_no || 'None'}</div>
+                                        <div>Effective Date: {item.effective_date || 'None'}</div>
+                                        <div className="flex items-center gap-2">Status: <select
+                                            value={item.status}
+                                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                                            className={`border rounded-2px px-2 py-0.5 font-mono text-xs font-bold ${STATUS_COLORS[item.status] || ''}`}
+                                        >
+                                            {STATUSES.map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select></div>
+                                        <div>Created: {new Date(item.created_at).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </main>
         </div>

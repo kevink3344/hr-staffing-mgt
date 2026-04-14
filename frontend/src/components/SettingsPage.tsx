@@ -185,7 +185,7 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 text-slate-100 font-mono">
+        <div className={`min-h-screen font-mono ${localStorage.getItem('mainUiTheme') === 'light' ? 'bg-slate-100 text-slate-900' : 'bg-slate-900 text-slate-100'}`}>
             <AppHeader
                 title="Settings"
                 onNavigateToMain={onNavigateToMain}
@@ -508,6 +508,7 @@ const FONT_OPTIONS = {
 
 function IncludedColumnsSection() {
     const isAdmin = localStorage.getItem('userEmail') === 'admin@staffing.com';
+    const isDark = localStorage.getItem('mainUiTheme') !== 'light';
     const [selectedColumns, setSelectedColumns] = useState<string[]>(() => {
         try {
             const saved = localStorage.getItem('includedColumns');
@@ -595,12 +596,12 @@ function IncludedColumnsSection() {
                     No columns configured. Click Configure to select which columns are sent to Oracle.
                 </div>
             ) : !isEditing && (
-                <div className="bg-gray-800 border-2 border-gray-700 rounded-2px p-4">
+                <div className={`border-2 rounded-2px p-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}>
                     <div className="flex flex-wrap gap-2">
                         {selectedColumns.map((col) => (
                             <span
                                 key={col}
-                                className="bg-blue-900 text-blue-100 px-2 py-1 rounded-2px text-xs"
+                                className={`px-2 py-1 rounded-2px text-xs ${isDark ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-900'}`}
                             >
                                 {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
                             </span>
