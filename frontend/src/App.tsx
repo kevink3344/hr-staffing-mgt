@@ -9,6 +9,7 @@ import { SignInPage } from './components/SignInPage'
 function App() {
     const [currentPage, setCurrentPage] = useState<'main' | 'views' | 'filters' | 'settings' | 'queue'>('main')
     const [signedIn, setSignedIn] = useState(() => !!localStorage.getItem('userName'))
+    const [initialRecordId, setInitialRecordId] = useState<number | undefined>(undefined)
 
     useEffect(() => {
         const textFont = localStorage.getItem('fontText');
@@ -23,7 +24,7 @@ function App() {
 
     const handleSignOut = () => { localStorage.removeItem('userName'); localStorage.removeItem('userEmail'); setSignedIn(false); };
     const navProps = {
-        onNavigateToMain: () => setCurrentPage('main'),
+        onNavigateToMain: () => { setInitialRecordId(undefined); setCurrentPage('main'); },
         onNavigateToViews: () => setCurrentPage('views'),
         onNavigateToFilters: () => setCurrentPage('filters'),
         onNavigateToSettings: () => setCurrentPage('settings'),
@@ -40,13 +41,15 @@ function App() {
                     onNavigateToSettings={navProps.onNavigateToSettings}
                     onNavigateToQueue={navProps.onNavigateToQueue}
                     onSignOut={handleSignOut}
+                    initialRecordId={initialRecordId}
+                    onInitialRecordHandled={() => setInitialRecordId(undefined)}
                 />
             ) : currentPage === 'views' ? (
                 <ViewsPage {...navProps} />
             ) : currentPage === 'settings' ? (
                 <SettingsPage {...navProps} />
             ) : currentPage === 'queue' ? (
-                <QueuePage {...navProps} />
+                <QueuePage {...navProps} onGoToRecord={(id: number) => { setInitialRecordId(id); setCurrentPage('main'); }} />
             ) : (
                 <FiltersPage {...navProps} />
             )}

@@ -344,9 +344,11 @@ interface MainTableProps {
     onNavigateToSettings: () => void;
     onNavigateToQueue: () => void;
     onSignOut: () => void;
+    initialRecordId?: number;
+    onInitialRecordHandled?: () => void;
 }
 
-export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue, onSignOut }: MainTableProps) {
+export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue, onSignOut, initialRecordId, onInitialRecordHandled }: MainTableProps) {
     const [records, setRecords] = useState<StaffRecord[]>([]);
     const [allRecords, setAllRecords] = useState<StaffRecord[]>([]);
     const [selectedRecord, setSelectedRecord] = useState<StaffRecord | null>(null);
@@ -445,6 +447,17 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         loadStickyColumns();
         loadColumnColors();
     }, []);
+
+    useEffect(() => {
+        if (initialRecordId != null && allRecords.length > 0) {
+            const record = allRecords.find((r: any) => r.id === initialRecordId);
+            if (record) {
+                setSelectedRecord(record);
+                setIsFlyoutOpen(true);
+            }
+            onInitialRecordHandled?.();
+        }
+    }, [initialRecordId, allRecords]);
 
     useEffect(() => {
         let filtered = allRecords;

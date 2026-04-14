@@ -134,7 +134,8 @@ export function ViewsPage({ onNavigateToMain, onNavigateToViews, onNavigateToFil
             <main className="max-w-6xl mx-auto p-6">
                 {/* System Views (read-only) */}
                 <section className="mb-8">
-                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Views {isAdmin ? '' : '(Read-Only)'}</h2>
+                    <h2 className="text-xl font-bold mb-1 text-blue-400">System Views</h2>
+                    {!isAdmin && <p className="text-xs text-gray-500 mb-4">Only administrators can edit system views</p>}
                     <div className="grid gap-4">
                         {views
                             .filter((v) => v.is_system)

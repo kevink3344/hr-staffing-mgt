@@ -197,10 +197,8 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
             />
 
             <main className="max-w-6xl mx-auto p-6">
-                {/* Included Columns Section (Admin Only) */}
-                {localStorage.getItem('userEmail') === 'admin@staffing.com' && (
-                    <IncludedColumnsSection />
-                )}
+                {/* Included Columns Section */}
+                <IncludedColumnsSection />
 
                 {/* Sticky Columns Section */}
                 <section className="mb-8">
@@ -509,6 +507,7 @@ const FONT_OPTIONS = {
 };
 
 function IncludedColumnsSection() {
+    const isAdmin = localStorage.getItem('userEmail') === 'admin@staffing.com';
     const [selectedColumns, setSelectedColumns] = useState<string[]>(() => {
         try {
             const saved = localStorage.getItem('includedColumns');
@@ -540,12 +539,13 @@ function IncludedColumnsSection() {
             <div className="flex justify-between items-center mb-4">
                 <div>
                     <h2 className="text-xl font-bold text-blue-400">Included Columns</h2>
-                    <p className="text-sm text-gray-400 mt-1">Select columns to be sent to the Oracle team when a queued item is processed.</p>
+                    <p className="text-sm text-gray-400 mt-1">Select columns to be sent to the Oracle team when a queued item is processed{!isAdmin ? ' (administrators only)' : ''}.</p>
                 </div>
                 {!isEditing && (
                     <button
                         onClick={startEdit}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                        disabled={!isAdmin}
+                        className={`font-bold py-2 px-4 rounded-2px border-2 ${isAdmin ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-800 cursor-pointer' : 'bg-gray-600 text-gray-400 border-gray-700 cursor-not-allowed opacity-50'}`}
                     >
                         {selectedColumns.length > 0 ? 'Edit' : '+ Configure'}
                     </button>

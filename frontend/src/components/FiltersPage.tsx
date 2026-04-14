@@ -59,6 +59,7 @@ export function FiltersPage({ onNavigateToMain, onNavigateToViews, onNavigateToF
     const [newColor, setNewColor] = useState(ROW_COLORS[0].value);
     const [newHighlightType, setNewHighlightType] = useState('row');
     const [isLoading, setIsLoading] = useState(true);
+    const isAdmin = localStorage.getItem('userEmail') === 'admin@staffing.com';
 
     useEffect(() => {
         loadFilters();
@@ -176,7 +177,8 @@ export function FiltersPage({ onNavigateToMain, onNavigateToViews, onNavigateToF
             <main className="max-w-6xl mx-auto p-6">
                 {/* Default Filters */}
                 <section className="mb-8">
-                    <h2 className="text-xl font-bold mb-4 text-blue-400">Default Filters</h2>
+                    <h2 className="text-xl font-bold mb-1 text-blue-400">Default Filters</h2>
+                    {!isAdmin && <p className="text-xs text-gray-500 mb-4">Only administrators can edit system filters</p>}
                     <div className="grid gap-4">
                         {systemFilters.map((sf) => {
                             const colorInfo = ROW_COLORS.find(c => c.value === sf.row_color);
@@ -206,7 +208,8 @@ export function FiltersPage({ onNavigateToMain, onNavigateToViews, onNavigateToF
                                             </span>
                                             <button
                                                 onClick={() => handleEdit(sf)}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-2px text-sm border-2 border-blue-800"
+                                                disabled={!isAdmin}
+                                                className={`font-bold py-1 px-3 rounded-2px text-sm border-2 ${isAdmin ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-800 cursor-pointer' : 'bg-gray-600 text-gray-400 border-gray-700 cursor-not-allowed opacity-50'}`}
                                             >
                                                 Edit
                                             </button>
