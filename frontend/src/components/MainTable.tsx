@@ -859,7 +859,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                                             }`}
                                                         title={d}
                                                     >
-                                                        {d === 'comfortable' ? '▁' : d === 'compact' ? '▃' : '▅'}
+                                                        {d === 'comfortable' ? 'I' : d === 'compact' ? 'II' : 'III'}
                                                     </button>
                                                 ))}
                                             </div>

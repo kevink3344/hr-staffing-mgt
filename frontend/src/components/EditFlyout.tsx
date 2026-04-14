@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { staffApi, historyApi, commentsApi, queueApi } from '../api';
 import { COLUMN_LABELS, EDITABLE_FIELDS, StaffRecord } from '../constants';
 
@@ -9,6 +9,10 @@ interface EditFlyoutProps {
     onSave: (record: StaffRecord) => void;
 }
 
+const MIN_PANEL_WIDTH = 320;
+const MAX_PANEL_WIDTH = 900;
+const DEFAULT_PANEL_WIDTH = 384; // sm:w-96 = 24rem = 384px
+
 export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps) {
     const [activeTab, setActiveTab] = useState<'details' | 'history' | 'comments'>('details');
     const [formData, setFormData] = useState<any>(record || {});
@@ -18,7 +22,41 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
     const [isSaving, setIsSaving] = useState(false);
     const [queueItemId, setQueueItemId] = useState<number | null>(null);
     const [isQueuing, setIsQueuing] = useState(false);
+    const [isPinned, setIsPinned] = useState(() => localStorage.getItem('editFlyoutPinned') === 'true');
+    const [panelWidth, setPanelWidth] = useState(() => {
+        const saved = localStorage.getItem('editFlyoutWidth');
+        return saved ? Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, parseInt(saved, 10))) : DEFAULT_PANEL_WIDTH;
+    });
+    const [isDragging, setIsDragging] = useState(false);
     const commentsEndRef = useRef<HTMLDivElement>(null);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, window.innerWidth - e.clientX));
+        setPanelWidth(newWidth);
+    }, []);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        // Save width after drag ends
+        setPanelWidth(w => { localStorage.setItem('editFlyoutWidth', String(w)); return w; });
+    }, [handleMouseMove]);
+
+    const handleDragStart = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [handleMouseMove, handleMouseUp]);
+
+    const togglePin = () => {
+        setIsPinned(prev => {
+            const next = !prev;
+            localStorage.setItem('editFlyoutPinned', String(next));
+            return next;
+        });
+    };
 
     useEffect(() => {
         if (record) {
@@ -125,24 +163,44 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
     return (
         <>
             {isOpen && (
-                <div className="fixed inset-0 z-50">
-                    {/* Overlay */}
-                    <div
-                        className="absolute inset-0 bg-black bg-opacity-50 z-40"
-                        onClick={onClose}
-                    />
+                <div className={`fixed inset-0 z-50 ${isPinned ? 'pointer-events-none' : ''}`} style={isDragging ? { cursor: 'col-resize', pointerEvents: 'auto' } : undefined}>
+                    {/* Overlay - hidden when pinned */}
+                    {!isPinned && (
+                        <div
+                            className="absolute inset-0 bg-black bg-opacity-50 z-40"
+                            onClick={onClose}
+                        />
+                    )}
 
                     {/* Panel - positioned on the right */}
-                    <div className="absolute top-0 right-0 bottom-0 w-full sm:w-96 bg-white shadow-2xl flex flex-col border-l-2 border-gray-800 z-50">
+                    <div
+                        className="absolute top-0 right-0 bottom-0 bg-white shadow-2xl flex flex-col border-l-2 border-gray-800 z-50 pointer-events-auto"
+                        style={{ width: window.innerWidth < 640 ? '100%' : `${panelWidth}px` }}
+                    >
+                        {/* Drag handle */}
+                        <div
+                            className="absolute top-0 left-0 bottom-0 w-1.5 cursor-col-resize z-50 hover:bg-blue-500 transition-colors"
+                            style={isDragging ? { backgroundColor: 'rgb(59, 130, 246)' } : undefined}
+                            onMouseDown={handleDragStart}
+                        />
                         {/* Header */}
                         <div className="bg-gray-900 text-white p-4 border-b-2 border-gray-800">
-                            <h2 className="text-lg font-bold font-mono">{record.employee_name || 'None'}</h2>
-                            <button
-                                onClick={onClose}
-                                className="absolute top-4 right-4 text-white hover:text-gray-200 text-2xl leading-none"
-                            >
-                                ×
-                            </button>
+                            <h2 className="text-lg font-bold font-mono pr-16">{record.employee_name || 'None'}</h2>
+                            <div className="absolute top-4 right-4 flex items-center gap-2">
+                                <button
+                                    onClick={togglePin}
+                                    className={`text-white hover:text-gray-200 text-lg leading-none ${isPinned ? 'opacity-100' : 'opacity-50'}`}
+                                    title={isPinned ? 'Unpin panel' : 'Pin panel open'}
+                                >
+                                    📌
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="text-white hover:text-gray-200 text-2xl leading-none"
+                                >
+                                    ×
+                                </button>
+                            </div>
                         </div>
 
                         {/* Position Info */}
@@ -212,6 +270,15 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                             setFormData({ ...formData, [field]: e.target.value })
                                                         }
                                                         className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-y"
+                                                    />
+                                                ) : field === 'contract_start_date' || field === 'contract_end_date' ? (
+                                                    <input
+                                                        type="date"
+                                                        value={formData[field] || ''}
+                                                        onChange={(e) =>
+                                                            setFormData({ ...formData, [field]: e.target.value })
+                                                        }
+                                                        className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
                                                     />
                                                 ) : (
                                                     <input
