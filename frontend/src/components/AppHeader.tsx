@@ -49,6 +49,15 @@ export function AppHeader({
 
     const loggedInUser = localStorage.getItem('userEmail') || 'demo@staffing.com';
 
+    const userIconColor = (() => {
+        switch (loggedInUser) {
+            case 'testuser1@staffing.com': return 'text-blue-400';
+            case 'testuser2@staffing.com': return 'text-green-400';
+            case 'admin@staffing.com': return 'text-red-400';
+            default: return isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700';
+        }
+    })();
+
     const setTheme = (t: 'dark' | 'light') => {
         setThemeState(t);
         localStorage.setItem('mainUiTheme', t);
