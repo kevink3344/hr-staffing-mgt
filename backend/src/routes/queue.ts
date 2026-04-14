@@ -57,7 +57,7 @@ router.post('/', async (req: Request, res: Response) => {
 
         // Check if already queued (non-cancelled)
         const existing = await db.get(
-            "SELECT id FROM queue_items WHERE staff_record_id = ? AND status NOT IN ('Cancelled')",
+            "SELECT id FROM queue_items WHERE staff_record_id = ?",
             [staff_record_id]
         );
         if (existing) {
@@ -79,6 +79,17 @@ router.post('/', async (req: Request, res: Response) => {
         );
 
         const item = await db.get('SELECT * FROM queue_items WHERE id = ?', [result.lastID]);
+
+        // Log history for adding to queue
+        await db.run(
+            `INSERT INTO staff_record_history (record_id, changed_by, changes) VALUES (?, ?, ?)`,
+            [
+                staff_record_id,
+                createdBy,
+                JSON.stringify({ queue: { from: null, to: 'Added to queue' } }),
+            ]
+        );
+
         res.status(201).json(item);
     } catch (err) {
         console.error(err);
@@ -143,7 +154,20 @@ router.delete('/:id', async (req: Request, res: Response) => {
         const item = await db.get('SELECT * FROM queue_items WHERE id = ?', [id]);
         if (!item) return res.status(404).json({ error: 'Queue item not found' });
 
+        const deletedBy = req.headers['x-user-email'] as string || 'demo@staffing.com';
+
         await db.run('DELETE FROM queue_items WHERE id = ?', [id]);
+
+        // Log history for removing from queue
+        await db.run(
+            `INSERT INTO staff_record_history (record_id, changed_by, changes) VALUES (?, ?, ?)`,
+            [
+                item.staff_record_id,
+                deletedBy,
+                JSON.stringify({ queue: { from: 'In queue', to: 'Removed from queue' } }),
+            ]
+        );
+
         res.json({ success: true });
     } catch (err) {
         console.error(err);

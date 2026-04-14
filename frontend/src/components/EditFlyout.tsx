@@ -123,7 +123,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
     const checkQueueStatus = async (recordId: number) => {
         try {
             const res = await queueApi.getAll(undefined, recordId);
-            const active = res.data.find((q: any) => q.status !== 'Cancelled');
+            const active = res.data.length > 0 ? res.data[0] : null;
             setQueueItemId(active ? active.id : null);
         } catch (err) {
             console.error('Failed to check queue status:', err);
@@ -138,7 +138,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         setIsQueuing(true);
         try {
             if (queueItemId) {
-                await queueApi.updateStatus(queueItemId, 'Cancelled');
+                await queueApi.delete(queueItemId);
                 setQueueItemId(null);
             } else {
                 const res = await queueApi.create(record.id);
