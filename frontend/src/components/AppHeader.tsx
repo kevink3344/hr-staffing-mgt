@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Grip, X, Clock, Settings2, Download, Settings, Pin, Sun, Moon, Rows4, User, LogOut } from 'lucide-react';
+import { userSettingsApi } from '../api';
 
 interface AppHeaderProps {
     title: string;
@@ -37,15 +38,21 @@ export function AppHeader({
     onDensityChange,
 }: AppHeaderProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
-        return (localStorage.getItem('mainUiTheme') as 'dark' | 'light') || 'dark';
-    });
+    const [theme, setThemeState] = useState<'dark' | 'light'>('dark');
     const isDark = theme === 'dark';
 
-    const [density, setDensityState] = useState<'comfortable' | 'compact' | 'very-compact'>(() => {
-        return (localStorage.getItem('mainUiDensity') as any) || 'compact';
-    });
+    const [density, setDensityState] = useState<'comfortable' | 'compact' | 'very-compact'>('compact');
     const [showDensitySlider, setShowDensitySlider] = useState(false);
+    const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+    useEffect(() => {
+        userSettingsApi.getAll().then((res) => {
+            const s = res.data;
+            if (s.theme) setThemeState(s.theme as 'dark' | 'light');
+            if (s.density) setDensityState(s.density as any);
+            setSettingsLoaded(true);
+        }).catch(() => setSettingsLoaded(true));
+    }, []);
 
     const loggedInUser = localStorage.getItem('userEmail') || 'demo@staffing.com';
 
@@ -60,7 +67,7 @@ export function AppHeader({
 
     const setTheme = (t: 'dark' | 'light') => {
         setThemeState(t);
-        localStorage.setItem('mainUiTheme', t);
+        userSettingsApi.set('theme', t).catch(() => { });
     };
 
     const currentDensity = densityProp ?? density;
@@ -68,7 +75,7 @@ export function AppHeader({
         if (onDensityChange) onDensityChange(d);
         else {
             setDensityState(d);
-            localStorage.setItem('mainUiDensity', d);
+            userSettingsApi.set('density', d).catch(() => { });
         }
     };
 

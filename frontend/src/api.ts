@@ -110,4 +110,9 @@ export const queueApi = {
     delete: (id: number) => api.delete(`/queue/${id}`),
 };
 
+export const userSettingsApi = {
+    getAll: () => api.get('/user-settings'),
+    set: (key: string, value: string) => api.put('/user-settings', { key, value }),
+};
+
 export default api;

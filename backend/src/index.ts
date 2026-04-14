@@ -17,6 +17,7 @@ import commentsRoutes from './routes/comments.js';
 import stickyColumnsRoutes from './routes/stickyColumns.js';
 import columnColorsRoutes from './routes/columnColors.js';
 import queueRoutes from './routes/queue.js';
+import userSettingsRoutes from './routes/userSettings.js';
 
 config();
 
@@ -213,6 +214,7 @@ app.use('/api/comments', commentsRoutes);
 app.use('/api/sticky-columns', stickyColumnsRoutes);
 app.use('/api/column-colors', columnColorsRoutes);
 app.use('/api/queue', queueRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
 
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url);

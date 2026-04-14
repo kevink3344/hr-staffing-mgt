@@ -275,6 +275,17 @@ export async function initializeDatabase(): Promise<void> {
     )
   `);
 
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_email TEXT NOT NULL,
+        setting_key TEXT NOT NULL,
+        setting_value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_email, setting_key)
+    )
+  `);
+
     console.log('✅ Database initialized');
 }
 
