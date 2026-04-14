@@ -4,9 +4,11 @@ import { ViewsPage } from './components/ViewsPage'
 import { FiltersPage } from './components/FiltersPage'
 import { SettingsPage } from './components/SettingsPage'
 import { QueuePage } from './components/QueuePage'
+import { SignInPage } from './components/SignInPage'
 
 function App() {
     const [currentPage, setCurrentPage] = useState<'main' | 'views' | 'filters' | 'settings' | 'queue'>('main')
+    const [signedIn, setSignedIn] = useState(() => !!localStorage.getItem('userName'))
 
     useEffect(() => {
         const textFont = localStorage.getItem('fontText');
@@ -15,23 +17,38 @@ function App() {
         if (numbersFont) document.documentElement.style.setProperty('--font-numbers', numbersFont);
     }, []);
 
+    if (!signedIn) {
+        return <SignInPage onSignIn={() => setSignedIn(true)} />;
+    }
+
+    const handleSignOut = () => { localStorage.removeItem('userName'); localStorage.removeItem('userEmail'); setSignedIn(false); };
+    const navProps = {
+        onNavigateToMain: () => setCurrentPage('main'),
+        onNavigateToViews: () => setCurrentPage('views'),
+        onNavigateToFilters: () => setCurrentPage('filters'),
+        onNavigateToSettings: () => setCurrentPage('settings'),
+        onNavigateToQueue: () => setCurrentPage('queue'),
+        onSignOut: handleSignOut,
+    };
+
     return (
         <>
             {currentPage === 'main' ? (
                 <MainTable
-                    onNavigateToViews={() => setCurrentPage('views')}
-                    onNavigateToFilters={() => setCurrentPage('filters')}
-                    onNavigateToSettings={() => setCurrentPage('settings')}
-                    onNavigateToQueue={() => setCurrentPage('queue')}
+                    onNavigateToViews={navProps.onNavigateToViews}
+                    onNavigateToFilters={navProps.onNavigateToFilters}
+                    onNavigateToSettings={navProps.onNavigateToSettings}
+                    onNavigateToQueue={navProps.onNavigateToQueue}
+                    onSignOut={handleSignOut}
                 />
             ) : currentPage === 'views' ? (
-                <ViewsPage onBack={() => setCurrentPage('main')} />
+                <ViewsPage {...navProps} />
             ) : currentPage === 'settings' ? (
-                <SettingsPage onBack={() => setCurrentPage('main')} />
+                <SettingsPage {...navProps} />
             ) : currentPage === 'queue' ? (
-                <QueuePage onBack={() => setCurrentPage('main')} />
+                <QueuePage {...navProps} />
             ) : (
-                <FiltersPage onBack={() => setCurrentPage('main')} />
+                <FiltersPage {...navProps} />
             )}
         </>
     )

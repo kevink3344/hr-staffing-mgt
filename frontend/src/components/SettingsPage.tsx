@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { stickyColumnsApi, columnColorsApi } from '../api';
 import { STAFF_COLUMNS, COLUMN_LABELS } from '../constants';
+import { AppHeader } from './AppHeader';
 
 interface SettingsPageProps {
-    onBack: () => void;
+    onNavigateToMain: () => void;
+    onNavigateToViews: () => void;
+    onNavigateToFilters: () => void;
+    onNavigateToSettings: () => void;
+    onNavigateToQueue: () => void;
+    onSignOut: () => void;
 }
 
-export function SettingsPage({ onBack }: SettingsPageProps) {
+export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue, onSignOut }: SettingsPageProps) {
     const [stickyColumns, setStickyColumns] = useState<any[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -180,20 +186,22 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-mono">
-            {/* Header */}
-            <header className="bg-gray-900 border-b-4 border-gray-800 p-6">
-                <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <h1 className="text-3xl font-bold">Settings</h1>
-                    <button
-                        onClick={onBack}
-                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
-                    >
-                        ← Back to Table
-                    </button>
-                </div>
-            </header>
+            <AppHeader
+                title="Settings"
+                onNavigateToMain={onNavigateToMain}
+                onNavigateToViews={onNavigateToViews}
+                onNavigateToFilters={onNavigateToFilters}
+                onNavigateToSettings={onNavigateToSettings}
+                onNavigateToQueue={onNavigateToQueue}
+                onSignOut={onSignOut}
+            />
 
             <main className="max-w-6xl mx-auto p-6">
+                {/* Included Columns Section (Admin Only) */}
+                {localStorage.getItem('userEmail') === 'admin@staffing.com' && (
+                    <IncludedColumnsSection />
+                )}
+
                 {/* Sticky Columns Section */}
                 <section className="mb-8">
                     <div className="flex justify-between items-center mb-4">
@@ -499,6 +507,111 @@ const FONT_OPTIONS = {
         { label: 'System Monospace', value: 'monospace' },
     ],
 };
+
+function IncludedColumnsSection() {
+    const [selectedColumns, setSelectedColumns] = useState<string[]>(() => {
+        try {
+            const saved = localStorage.getItem('includedColumns');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const [isEditing, setIsEditing] = useState(false);
+    const [editColumns, setEditColumns] = useState<string[]>([]);
+
+    const startEdit = () => {
+        setEditColumns([...selectedColumns]);
+        setIsEditing(true);
+    };
+
+    const toggleColumn = (col: string) => {
+        setEditColumns((prev) =>
+            prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col]
+        );
+    };
+
+    const handleSave = () => {
+        setSelectedColumns(editColumns);
+        localStorage.setItem('includedColumns', JSON.stringify(editColumns));
+        setIsEditing(false);
+    };
+
+    return (
+        <section className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h2 className="text-xl font-bold text-blue-400">Included Columns</h2>
+                    <p className="text-sm text-gray-400 mt-1">Select columns to be sent to the Oracle team when a queued item is processed.</p>
+                </div>
+                {!isEditing && (
+                    <button
+                        onClick={startEdit}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                    >
+                        {selectedColumns.length > 0 ? 'Edit' : '+ Configure'}
+                    </button>
+                )}
+            </div>
+
+            {isEditing && (
+                <div className="border-2 border-blue-600 bg-blue-900/20 rounded-2px p-6 mb-4">
+                    <h3 className="text-lg font-bold mb-3">Select Columns ({editColumns.length})</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto mb-4">
+                        {STAFF_COLUMNS.map((col, idx) => (
+                            <label
+                                key={col}
+                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-700 p-2 rounded-2px"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={editColumns.includes(col)}
+                                    onChange={() => toggleColumn(col)}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-sm">
+                                    <span className="text-gray-400">{idx + 1}.</span> {COLUMN_LABELS[col]}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleSave}
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                        >
+                            Save
+                        </button>
+                        <button
+                            onClick={() => setIsEditing(false)}
+                            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {!isEditing && selectedColumns.length === 0 ? (
+                <div className="border-2 border-gray-700 rounded-2px p-8 text-center text-gray-500">
+                    No columns configured. Click Configure to select which columns are sent to Oracle.
+                </div>
+            ) : !isEditing && (
+                <div className="bg-gray-800 border-2 border-gray-700 rounded-2px p-4">
+                    <div className="flex flex-wrap gap-2">
+                        {selectedColumns.map((col) => (
+                            <span
+                                key={col}
+                                className="bg-blue-900 text-blue-100 px-2 py-1 rounded-2px text-xs"
+                            >
+                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-3">{selectedColumns.length} column{selectedColumns.length !== 1 ? 's' : ''} selected</div>
+                </div>
+            )}
+        </section>
+    );
+}
 
 function FontSettings() {
     const [textFont, setTextFont] = useState(() => localStorage.getItem('fontText') || FONT_OPTIONS.text[0].value);

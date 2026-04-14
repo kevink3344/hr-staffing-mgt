@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User, Rows4 } from 'lucide-react';
+import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User, Rows4, LogOut } from 'lucide-react';
 import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi, queueApi } from '../api';
 import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
 import { getRowColorClass, getCellColorClass, getRowBgClass, hasFilterColor } from '../utils';
@@ -343,9 +343,10 @@ interface MainTableProps {
     onNavigateToFilters: () => void;
     onNavigateToSettings: () => void;
     onNavigateToQueue: () => void;
+    onSignOut: () => void;
 }
 
-export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue }: MainTableProps) {
+export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue, onSignOut }: MainTableProps) {
     const [records, setRecords] = useState<StaffRecord[]>([]);
     const [allRecords, setAllRecords] = useState<StaffRecord[]>([]);
     const [selectedRecord, setSelectedRecord] = useState<StaffRecord | null>(null);
@@ -778,6 +779,14 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                 <Clock size={18} strokeWidth={2.5} />
                                 Queue
                             </button>
+                            <hr className={`my-1 ${isDark ? 'border-slate-700' : 'border-gray-200'}`} />
+                            <button
+                                onClick={() => { onSignOut(); setIsMenuOpen(false); }}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-red-400 hover:bg-slate-800' : 'text-red-600 hover:bg-gray-100'}`}
+                            >
+                                <LogOut size={18} strokeWidth={2.5} />
+                                Sign Out
+                            </button>
                         </nav>
                     </div>
                 </>
@@ -877,7 +886,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             <div className="relative group">
                                 <button
                                     aria-label="User"
-                                    className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`font-mono font-bold h-10 w-10 flex items-center justify-center text-xl ${loggedInUser === 'testuser1@staffing.com' ? 'text-blue-400' : loggedInUser === 'testuser2@staffing.com' ? 'text-green-400' : loggedInUser === 'admin@staffing.com' ? 'text-red-400' : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
                                     title={loggedInUser}
                                 >
                                     <User size={20} strokeWidth={2.5} />

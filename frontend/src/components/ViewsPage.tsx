@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
 import { viewsApi } from '../api';
 import { STAFF_COLUMNS, COLUMN_LABELS } from '../constants';
+import { AppHeader } from './AppHeader';
 
 interface ViewsPageProps {
-    onBack: () => void;
+    onNavigateToMain: () => void;
+    onNavigateToViews: () => void;
+    onNavigateToFilters: () => void;
+    onNavigateToSettings: () => void;
+    onNavigateToQueue: () => void;
+    onSignOut: () => void;
 }
 
-export function ViewsPage({ onBack }: ViewsPageProps) {
+export function ViewsPage({ onNavigateToMain, onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue, onSignOut }: ViewsPageProps) {
     const [views, setViews] = useState<any[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [newViewName, setNewViewName] = useState('');
     const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const isAdmin = localStorage.getItem('userEmail') === 'admin@staffing.com';
 
     useEffect(() => {
         loadViews();
@@ -114,23 +121,20 @@ export function ViewsPage({ onBack }: ViewsPageProps) {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-mono">
-            {/* Header */}
-            <header className="bg-gray-900 border-b-4 border-gray-800 p-6">
-                <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <h1 className="text-3xl font-bold">Manage Views</h1>
-                    <button
-                        onClick={onBack}
-                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
-                    >
-                        ← Back to Table
-                    </button>
-                </div>
-            </header>
+            <AppHeader
+                title="Manage Views"
+                onNavigateToMain={onNavigateToMain}
+                onNavigateToViews={onNavigateToViews}
+                onNavigateToFilters={onNavigateToFilters}
+                onNavigateToSettings={onNavigateToSettings}
+                onNavigateToQueue={onNavigateToQueue}
+                onSignOut={onSignOut}
+            />
 
             <main className="max-w-6xl mx-auto p-6">
                 {/* System Views (read-only) */}
                 <section className="mb-8">
-                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Views (Read-Only)</h2>
+                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Views {isAdmin ? '' : '(Read-Only)'}</h2>
                     <div className="grid gap-4">
                         {views
                             .filter((v) => v.is_system)
@@ -139,7 +143,17 @@ export function ViewsPage({ onBack }: ViewsPageProps) {
                                     key={view.id}
                                     className="bg-gray-800 border-2 border-gray-700 rounded-2px p-4"
                                 >
-                                    <div className="font-bold text-lg mb-2">{view.name}</div>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="font-bold text-lg">{view.name}</div>
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => handleEdit(view)}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-2px text-sm border-2 border-blue-800"
+                                            >
+                                                Edit
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="text-xs text-gray-400 mb-3">
                                         {view.column_keys.length} columns
                                     </div>

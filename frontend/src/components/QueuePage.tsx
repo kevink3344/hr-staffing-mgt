@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { queueApi } from '../api';
-import { ArrowLeft, Trash2, Save, X } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import { AppHeader } from './AppHeader';
 
 interface QueuePageProps {
-    onBack: () => void;
+    onNavigateToMain: () => void;
+    onNavigateToViews: () => void;
+    onNavigateToFilters: () => void;
+    onNavigateToSettings: () => void;
+    onNavigateToQueue: () => void;
+    onSignOut: () => void;
 }
 
 const STATUSES = ['Pending', 'In Progress', 'Completed', 'Error', 'Cancelled', 'Hold'];
@@ -31,7 +37,7 @@ interface QueueItem {
     updated_at: string;
 }
 
-export function QueuePage({ onBack }: QueuePageProps) {
+export function QueuePage({ onNavigateToMain, onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue, onSignOut }: QueuePageProps) {
     const [items, setItems] = useState<QueueItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string>('');
@@ -105,34 +111,32 @@ export function QueuePage({ onBack }: QueuePageProps) {
 
     return (
         <div className={`min-h-screen font-mono ${isDark ? 'bg-gray-950 text-gray-100' : 'bg-gray-50 text-gray-900'}`}>
-            <header className={`border-b-4 p-6 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-300'}`}>
-                <div className="max-w-6xl mx-auto">
-                    <div className="flex items-center gap-4 mb-4">
-                        <button
-                            onClick={onBack}
-                            className={`flex items-center gap-2 font-bold ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
-                        >
-                            <ArrowLeft size={20} strokeWidth={2.5} />
-                            Back
-                        </button>
-                        <h1 className="text-xl font-bold">Queue</h1>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <label className={`text-sm font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Filter by Status:</label>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className={`border-2 rounded-2px px-3 py-1.5 font-mono text-sm ${isDark ? 'border-gray-600 bg-gray-800 text-gray-100' : 'border-gray-800 bg-white text-gray-900'}`}
-                        >
-                            <option value="">All</option>
-                            {STATUSES.map(s => (
-                                <option key={s} value={s}>{s}</option>
-                            ))}
-                        </select>
-                        <span className={`text-sm ml-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
-                    </div>
+            <AppHeader
+                title="Queue"
+                onNavigateToMain={onNavigateToMain}
+                onNavigateToViews={onNavigateToViews}
+                onNavigateToFilters={onNavigateToFilters}
+                onNavigateToSettings={onNavigateToSettings}
+                onNavigateToQueue={onNavigateToQueue}
+                onSignOut={onSignOut}
+            />
+
+            <div className="max-w-6xl mx-auto px-6 pt-4">
+                <div className="flex items-center gap-3 mb-4">
+                    <label className={`text-sm font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Filter by Status:</label>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className={`border-2 rounded-2px px-3 py-1.5 font-mono text-sm ${isDark ? 'border-gray-600 bg-gray-800 text-gray-100' : 'border-gray-800 bg-white text-gray-900'}`}
+                    >
+                        <option value="">All</option>
+                        {STATUSES.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+                    <span className={`text-sm ml-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
                 </div>
-            </header>
+            </div>
 
             <main className="max-w-6xl mx-auto p-6">
                 {isLoading ? (
@@ -161,26 +165,11 @@ export function QueuePage({ onBack }: QueuePageProps) {
                                         <td className={`px-3 py-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{idx + 1}</td>
                                         {editingId === item.id ? (
                                             <>
-                                                <td className="px-3 py-2">
-                                                    <input value={editForm.employee_name || ''} onChange={(e) => setEditForm({ ...editForm, employee_name: e.target.value })}
-                                                        className={`border rounded-2px px-2 py-1 w-full font-mono text-sm ${isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-400 bg-white text-gray-900'}`} />
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <input value={editForm.employee_no || ''} onChange={(e) => setEditForm({ ...editForm, employee_no: e.target.value })}
-                                                        className={`border rounded-2px px-2 py-1 w-full font-mono text-sm ${isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-400 bg-white text-gray-900'}`} />
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <input value={editForm.position_name || ''} onChange={(e) => setEditForm({ ...editForm, position_name: e.target.value })}
-                                                        className={`border rounded-2px px-2 py-1 w-full font-mono text-sm ${isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-400 bg-white text-gray-900'}`} />
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <input value={editForm.pos_no || ''} onChange={(e) => setEditForm({ ...editForm, pos_no: e.target.value })}
-                                                        className={`border rounded-2px px-2 py-1 w-full font-mono text-sm ${isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-400 bg-white text-gray-900'}`} />
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <input type="date" value={editForm.effective_date || ''} onChange={(e) => setEditForm({ ...editForm, effective_date: e.target.value })}
-                                                        className={`border rounded-2px px-2 py-1 font-mono text-sm ${isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-400 bg-white text-gray-900'}`} />
-                                                </td>
+                                                <td className="px-3 py-2">{item.employee_name}</td>
+                                                <td className="px-3 py-2">{item.employee_no}</td>
+                                                <td className="px-3 py-2">{item.position_name}</td>
+                                                <td className="px-3 py-2">{item.pos_no}</td>
+                                                <td className="px-3 py-2">{item.effective_date}</td>
                                             </>
                                         ) : (
                                             <>
@@ -207,25 +196,9 @@ export function QueuePage({ onBack }: QueuePageProps) {
                                         </td>
                                         <td className="px-3 py-2">
                                             <div className="flex gap-1">
-                                                {editingId === item.id ? (
-                                                    <>
-                                                        <button onClick={handleSaveEdit} className="p-1 text-green-700 hover:text-green-900" title="Save">
-                                                            <Save size={16} strokeWidth={2.5} />
-                                                        </button>
-                                                        <button onClick={() => setEditingId(null)} className="p-1 text-gray-500 hover:text-gray-700" title="Cancel">
-                                                            <X size={16} strokeWidth={2.5} />
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button onClick={() => startEdit(item)} className={`px-2 py-1 text-xs font-bold border rounded-2px ${isDark ? 'text-blue-400 hover:text-blue-300 border-blue-600 hover:bg-blue-900' : 'text-blue-700 hover:text-blue-900 border-blue-300 hover:bg-blue-50'}`}>
-                                                            Edit
-                                                        </button>
-                                                        <button onClick={() => handleDelete(item.id)} className="p-1 text-red-600 hover:text-red-800" title="Delete">
-                                                            <Trash2 size={16} strokeWidth={2.5} />
-                                                        </button>
-                                                    </>
-                                                )}
+                                                <button onClick={() => handleDelete(item.id)} className="p-1 text-red-600 hover:text-red-800" title="Delete">
+                                                    <Trash2 size={16} strokeWidth={2.5} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

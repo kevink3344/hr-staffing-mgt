@@ -6,8 +6,12 @@ const api = axios.create({
     baseURL: API_BASE,
     headers: {
         'Content-Type': 'application/json',
-        'x-user-email': localStorage.getItem('userEmail') || 'demo@staffing.com',
     },
+});
+
+api.interceptors.request.use((config) => {
+    config.headers['x-user-email'] = localStorage.getItem('userEmail') || 'demo@staffing.com';
+    return config;
 });
 
 // Staff Records API

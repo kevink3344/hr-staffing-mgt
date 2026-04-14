@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { filtersApi } from '../api';
 import { STAFF_COLUMNS, COLUMN_LABELS } from '../constants';
+import { AppHeader } from './AppHeader';
 
 const FILTER_TYPES = [
     { value: 'equals', label: 'Equals' },
@@ -39,10 +40,15 @@ const SYSTEM_COLOR_MAP: Record<string, string> = {
 };
 
 interface FiltersPageProps {
-    onBack: () => void;
+    onNavigateToMain: () => void;
+    onNavigateToViews: () => void;
+    onNavigateToFilters: () => void;
+    onNavigateToSettings: () => void;
+    onNavigateToQueue: () => void;
+    onSignOut: () => void;
 }
 
-export function FiltersPage({ onBack }: FiltersPageProps) {
+export function FiltersPage({ onNavigateToMain, onNavigateToViews, onNavigateToFilters, onNavigateToSettings, onNavigateToQueue, onSignOut }: FiltersPageProps) {
     const [systemFilters, setSystemFilters] = useState<any[]>([]);
     const [filters, setFilters] = useState<any[]>([]);
     const [isCreating, setIsCreating] = useState(false);
@@ -157,18 +163,15 @@ export function FiltersPage({ onBack }: FiltersPageProps) {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-mono">
-            {/* Header */}
-            <header className="bg-gray-900 border-b-4 border-gray-800 p-6">
-                <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <h1 className="text-3xl font-bold">Manage Filters</h1>
-                    <button
-                        onClick={onBack}
-                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
-                    >
-                        ← Back to Table
-                    </button>
-                </div>
-            </header>
+            <AppHeader
+                title="Manage Filters"
+                onNavigateToMain={onNavigateToMain}
+                onNavigateToViews={onNavigateToViews}
+                onNavigateToFilters={onNavigateToFilters}
+                onNavigateToSettings={onNavigateToSettings}
+                onNavigateToQueue={onNavigateToQueue}
+                onSignOut={onSignOut}
+            />
 
             <main className="max-w-6xl mx-auto p-6">
                 {/* Default Filters */}
