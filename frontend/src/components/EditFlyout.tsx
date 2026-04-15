@@ -137,6 +137,13 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         if (!window.confirm(`Are you sure you want to ${action} the Queue?`)) return;
         setIsQueuing(true);
         try {
+            // Save any pending form changes first
+            const hasChanges = Object.keys(formData).some(k => formData[k] !== (record as any)[k]);
+            if (hasChanges) {
+                const res = await staffApi.update(record.id, formData);
+                onSave(res.data);
+            }
+
             if (queueItemId) {
                 await queueApi.delete(queueItemId);
                 setQueueItemId(null);
@@ -271,7 +278,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                         }
                                                         className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-y"
                                                     />
-                                                ) : field === 'contract_start_date' || field === 'contract_end_date' ? (
+                                                ) : field === 'contract_start_date' || field === 'contract_end_date' || field === 'effective_date' ? (
                                                     <input
                                                         type="date"
                                                         value={formData[field] || ''}

@@ -40,6 +40,7 @@ export function ActivityFeed({ isOpen, onClose, onRecordClick }: ActivityFeedPro
     const [entries, setEntries] = useState<ActivityEntry[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -68,9 +69,27 @@ export function ActivityFeed({ isOpen, onClose, onRecordClick }: ActivityFeedPro
 
     if (!isOpen) return null;
 
+    // Filter entries by search term
+    const filteredEntries = searchTerm.trim()
+        ? entries.filter((entry) => {
+            const term = searchTerm.toLowerCase();
+            if (entry.employee_name?.toLowerCase().includes(term)) return true;
+            if (entry.pos_no?.toLowerCase().includes(term)) return true;
+            if (entry.changed_by?.toLowerCase().includes(term)) return true;
+            for (const field of Object.keys(entry.changes)) {
+                const c = entry.changes[field];
+                const label = COLUMN_LABELS[field as keyof typeof COLUMN_LABELS] || field;
+                if (label.toLowerCase().includes(term)) return true;
+                if (c.from?.toLowerCase().includes(term)) return true;
+                if (c.to?.toLowerCase().includes(term)) return true;
+            }
+            return false;
+        })
+        : entries;
+
     // Group entries by date
     const grouped: { date: string; items: ActivityEntry[] }[] = [];
-    for (const entry of entries) {
+    for (const entry of filteredEntries) {
         const date = formatDate(entry.created_at);
         const last = grouped[grouped.length - 1];
         if (last && last.date === date) {
@@ -96,6 +115,17 @@ export function ActivityFeed({ isOpen, onClose, onRecordClick }: ActivityFeedPro
                     >
                         <X size={20} strokeWidth={2.5} />
                     </button>
+                </div>
+
+                {/* Search */}
+                <div className="px-4 py-2 border-b-2 border-gray-200 bg-gray-50">
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search activity..."
+                        className="w-full bg-white border-2 border-gray-300 text-gray-900 px-3 py-1.5 rounded-2px font-mono text-sm focus:outline-none focus:border-blue-500"
+                    />
                 </div>
 
                 {/* Content */}

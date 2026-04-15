@@ -145,7 +145,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                             <tr
                                 key={record.id}
                                 onClick={() => setActiveRowId(record.id)}
-                                className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
+                                className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''} ${(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 ? 'border-l-4 border-l-blue-500' : ''}`}
                             >
                                 <td className={`border-r-2 border-gray-300 px-2 ${py} w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()}>
                                     <input type="checkbox" checked={checkedIds.has(record.id)} onChange={() => onToggleCheck(record.id)} className="cursor-pointer" />
@@ -296,7 +296,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin
                             title="Click to open details"
                             className={`${getRowColorClass(
                                 record, activeFilters
-                            )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px]`}
+                            )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px] ${(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 ? 'border-l-4 border-l-blue-500' : ''}`}
                         >
                             <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? firstPy : py}`} onClick={(e) => e.stopPropagation()}>
                                 <input type="checkbox" checked={checkedIds.has(record.id)} onChange={() => onToggleCheck(record.id)} className="cursor-pointer" />
