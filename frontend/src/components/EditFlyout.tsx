@@ -211,7 +211,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                         </div>
 
                         {/* Position Info */}
-                        <div className="bg-gray-50 border-b-2 border-gray-300 px-4 py-3">
+                        <div className="bg-blue-50 border-b-2 border-blue-200 px-4 py-3">
                             <p className="text-xs text-gray-500 font-mono font-bold tracking-wider mb-1">POSITION</p>
                             <p className="text-sm font-bold font-mono text-gray-900">{record.position_name || '—'}</p>
                             <p className="text-xs text-gray-500 font-mono mt-1">
