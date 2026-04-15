@@ -194,6 +194,9 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                         <div className="bg-gray-900 text-white p-4 border-b-2 border-gray-800">
                             <h2 className="text-lg font-bold font-mono pr-16">{record.employee_name || 'None'}</h2>
                             <div className="absolute top-4 right-4 flex items-center gap-2">
+                                {queueItemId && (
+                                    <span className="w-2 h-2 rounded-full bg-blue-500" title="Pending in queue" />
+                                )}
                                 <button
                                     onClick={togglePin}
                                     className={`text-white hover:text-gray-200 text-lg leading-none ${isPinned ? 'opacity-100' : 'opacity-50'}`}

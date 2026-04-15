@@ -83,9 +83,10 @@ interface ListTableProps {
     onToggleCheckAll: (ids: number[]) => void;
     columnWidths: Record<string, number>;
     onColumnResize: (col: string, width: number) => void;
+    queuedIds: Set<number>;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize, queuedIds }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-1';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
@@ -188,7 +189,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
                                     <span className="relative">
                                         {idx + 1}
-                                        {(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 && <span className="absolute top-0 -right-2 w-1.5 h-1.5 rounded-full bg-blue-500" title="Edited in last 24h" />}
+                                        {queuedIds.has(record.id) && <span className="absolute top-0 -right-2 w-1.5 h-1.5 rounded-full bg-blue-500" title="Pending in queue" />}
                                     </span>
                                 </td>
                                 {visibleColumns.map((col) => {
@@ -242,9 +243,10 @@ interface DataTableProps {
     onToggleCheckAll: (ids: number[]) => void;
     columnWidths: Record<string, number>;
     onColumnResize: (col: string, width: number) => void;
+    queuedIds: Set<number>;
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize, queuedIds }: DataTableProps) {
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-2';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
     const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
@@ -316,7 +318,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin
                             <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
                                 <span className="relative">
                                     {idx + 1}
-                                    {(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 && <span className="absolute top-0 -right-2 w-1.5 h-1.5 rounded-full bg-blue-500" title="Edited in last 24h" />}
+                                    {queuedIds.has(record.id) && <span className="absolute top-0 -right-2 w-1.5 h-1.5 rounded-full bg-blue-500" title="Pending in queue" />}
                                 </span>
                             </td>
                             {visibleColumns.map((col) => {
@@ -389,6 +391,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
     const [isQueueing, setIsQueueing] = useState(false);
+    const [queuedIds, setQueuedIds] = useState<Set<number>>(new Set());
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
         try {
             const saved = localStorage.getItem('mainUiColumnWidths');
@@ -452,6 +455,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         loadPins();
         loadStickyColumns();
         loadColumnColors();
+        loadQueuedIds();
     }, []);
 
     useEffect(() => {
@@ -567,6 +571,16 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         }
     };
 
+    const loadQueuedIds = async () => {
+        try {
+            const res = await queueApi.getAll('Pending');
+            const ids = new Set<number>(res.data.map((q: any) => q.staff_record_id));
+            setQueuedIds(ids);
+        } catch (err) {
+            console.error('Failed to load queued IDs:', err);
+        }
+    };
+
     const togglePin = async (recordId: number) => {
         try {
             const current = pinnedMap.get(recordId);
@@ -622,6 +636,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
             }
             setCheckedIds(new Set());
             alert(`Queued ${added} item${added !== 1 ? 's' : ''}${skipped > 0 ? ` (${skipped} already in queue)` : ''}`);
+            loadQueuedIds();
         } catch (err) {
             console.error('Failed to queue items:', err);
             alert('Failed to queue some items');
@@ -1119,6 +1134,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             onToggleCheckAll={toggleCheckAll}
                             columnWidths={columnWidths}
                             onColumnResize={handleColumnResize}
+                            queuedIds={queuedIds}
                         />
                     ) : (
                         <DataTable
@@ -1140,6 +1156,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             onToggleCheckAll={toggleCheckAll}
                             columnWidths={columnWidths}
                             onColumnResize={handleColumnResize}
+                            queuedIds={queuedIds}
                         />
                     )}
                 </div>
