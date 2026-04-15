@@ -365,7 +365,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const loggedInUser = localStorage.getItem('userEmail') || 'demo@staffing.com';
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentView, setCurrentView] = useState('All Column View');
+    const [currentView, setCurrentView] = useState(() => localStorage.getItem('mainUiCurrentView') || 'All Column View');
     const [views, setViews] = useState<any[]>([]);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([...STAFF_COLUMNS]);
     const [isImportOpen, setIsImportOpen] = useState(false);
@@ -528,7 +528,14 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         try {
             const userEmail = localStorage.getItem('userEmail') || 'demo@staffing.com';
             const res = await viewsApi.getAll(userEmail);
-            setViews(res.data.filter((v: any) => v.is_system || v.is_active !== 0));
+            const loaded = res.data.filter((v: any) => v.is_system || v.is_active !== 0);
+            setViews(loaded);
+            // Restore the last-used view's columns
+            const savedViewName = localStorage.getItem('mainUiCurrentView');
+            if (savedViewName) {
+                const savedView = loaded.find((v: any) => v.name === savedViewName);
+                if (savedView) setVisibleColumns(savedView.column_keys);
+            }
         } catch (err) {
             console.error('Failed to load views:', err);
         }
@@ -686,6 +693,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
 
     const handleViewChange = (viewName: string) => {
         setCurrentView(viewName);
+        localStorage.setItem('mainUiCurrentView', viewName);
         const view = views.find((v) => v.name === viewName);
         if (view) {
             setVisibleColumns(view.column_keys);
