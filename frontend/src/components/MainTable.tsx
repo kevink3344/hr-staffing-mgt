@@ -887,7 +887,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                 {showDensitySlider && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowDensitySlider(false)} />
-                                        <div className={`absolute right-0 top-full mt-1 z-50 rounded-2px border-2 shadow-lg p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-800'}`}>
+                                        <div className={`absolute right-0 bottom-full mb-1 sm:bottom-auto sm:top-full sm:mb-0 sm:mt-1 z-50 rounded-2px border-2 shadow-lg p-3 ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-800'}`}>
                                             <div className="flex flex-col items-center gap-1" style={{ width: '36px', height: '100px' }}>
                                                 {(['comfortable', 'compact', 'very-compact'] as const).map((d) => (
                                                     <button
