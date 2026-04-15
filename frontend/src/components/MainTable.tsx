@@ -1017,7 +1017,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                     className={`flex items-center gap-2 text-xs font-mono px-2 py-1 border-2 rounded-2px transition-colors ${active ? cs.active : cs.inactive}`}
                                 >
                                     <div className={`w-3 h-3 border rounded-2px ${cs.swatch}`} />
-                                    {COLUMN_LABELS[sf.column as keyof typeof COLUMN_LABELS] || sf.column} = {Array.isArray(sf.value) ? sf.value.join(' / ') : sf.value}
+                                    <span className="hidden sm:inline">{COLUMN_LABELS[sf.column as keyof typeof COLUMN_LABELS] || sf.column} = </span>{Array.isArray(sf.value) ? sf.value.join(' / ') : sf.value}
                                 </button>
                             );
                         })}
@@ -1038,7 +1038,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                         ? 'bg-blue-400 border-blue-500 text-blue-900'
                                         : isDark ? 'border-blue-600 text-gray-300 hover:bg-blue-900/30' : 'border-blue-400 text-gray-700 hover:bg-blue-50'}`}
                                 >
-                                    {COLUMN_LABELS[f.column as keyof typeof COLUMN_LABELS] || f.column} {f.filter_type === 'contains' ? '⊃' : f.filter_type === 'does_not_equal' ? '≠' : f.filter_type === 'does_not_contain' ? '⊅' : '='} {Array.isArray(f.value) ? f.value.join(' / ') : f.value}
+                                    <span className="hidden sm:inline">{COLUMN_LABELS[f.column as keyof typeof COLUMN_LABELS] || f.column} {f.filter_type === 'contains' ? '⊃' : f.filter_type === 'does_not_equal' ? '≠' : f.filter_type === 'does_not_contain' ? '⊅' : '='} </span>{Array.isArray(f.value) ? f.value.join(' / ') : f.value}
                                 </button>
                             );
                         })}

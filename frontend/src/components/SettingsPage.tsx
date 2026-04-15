@@ -275,7 +275,7 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
                             {stickyColumns.map((sc, index) => (
                                 <div
                                     key={sc.id}
-                                    className={`border-2 rounded-2px p-4 flex items-center justify-between ${sc.is_active
+                                    className={`border-2 rounded-2px p-4 flex flex-wrap items-center justify-between gap-3 ${sc.is_active
                                         ? 'border-blue-600 bg-blue-900/20'
                                         : 'border-gray-700 bg-gray-900/20 opacity-60'
                                         }`}
@@ -354,8 +354,8 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
                             <h3 className="text-lg font-bold mb-3">
                                 {editingColorId ? 'Edit Column Color' : 'Add Column Color'}
                             </h3>
-                            <div className="flex items-end gap-4">
-                                <div className="flex-1">
+                            <div className="flex flex-wrap items-end gap-4">
+                                <div className="flex-1 min-w-full sm:min-w-0">
                                     <label className="block text-sm text-gray-400 mb-1">Column</label>
                                     <select
                                         value={colorColumn}
