@@ -834,13 +834,13 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             >
                                 <Grip size={20} strokeWidth={2.5} />
                             </button>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex items-center gap-4">
                                 <h1 className={`text-base sm:text-xl font-bold font-mono truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                     Carroll Middle School – 360
                                 </h1>
-                                <p className={`text-[10px] sm:text-xs font-mono mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    Date tracked to 9/01/2026 as of 04/10/2026
-                                </p>
+                                <span className={`text-xs font-mono font-bold px-2 py-0.5 border-2 rounded-2px whitespace-nowrap ${isDark ? 'border-gray-400 text-gray-400' : 'border-gray-400 text-gray-700'}`}>
+                                    9/01/2026
+                                </span>
                             </div>
                         </div>
                         <div className={`fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around py-2 border-t-2 sm:static sm:border-t-0 sm:py-0 sm:gap-2 sm:w-auto sm:justify-end sm:flex-shrink-0 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-300'}`}>
