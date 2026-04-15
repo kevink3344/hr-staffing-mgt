@@ -71,7 +71,7 @@ interface ListTableProps {
     onCellChange: (recordId: number, field: string, value: string) => void;
     onSaveRow: (recordId: number) => void;
     onCancelRow: (recordId: number) => void;
-    pinnedIds: Set<number>;
+    pinnedMap: Map<number, 'personal' | 'team'>;
     onTogglePin: (recordId: number) => void;
     activeFilters: FilterChip[];
     stickyColumns: string[];
@@ -85,7 +85,7 @@ interface ListTableProps {
     onColumnResize: (col: string, width: number) => void;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-1';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
@@ -153,10 +153,10 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                 <td className={`border-r-2 border-gray-300 px-2 ${py} w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                     <button
                                         onClick={() => onTogglePin(record.id)}
-                                        title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
-                                        className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-red-900' : 'text-gray-300 hover:text-gray-500'}`}
+                                        title={pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? 'Unpin (team)' : 'Make team pin') : 'Pin (personal)'}
+                                        className={`p-1 rounded-2px transition-colors ${pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? 'text-orange-500' : 'text-red-900') : 'text-gray-300 hover:text-gray-500'}`}
                                     >
-                                        <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
+                                        <Pin size={12} strokeWidth={1.5} fill={pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? '#f97316' : '#7f1d1d') : 'none'} />
                                     </button>
                                 </td>
                                 <td className={`border-r-2 border-gray-300 px-2 ${py} w-16 min-w-16`} onClick={(e) => e.stopPropagation()} style={columnColors['__edit__'] ? { backgroundColor: columnColors['__edit__'] } : undefined}>
@@ -227,7 +227,7 @@ interface DataTableProps {
     records: StaffRecord[];
     visibleColumns: string[];
     onRowClick: (record: StaffRecord) => void;
-    pinnedIds: Set<number>;
+    pinnedMap: Map<number, 'personal' | 'team'>;
     onTogglePin: (recordId: number) => void;
     activeFilters: FilterChip[];
     stickyColumns: string[];
@@ -241,7 +241,7 @@ interface DataTableProps {
     onColumnResize: (col: string, width: number) => void;
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize }: DataTableProps) {
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-2';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
     const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
@@ -304,10 +304,10 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedIds, onTogglePin
                             <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? firstPy : py}`} onClick={(e) => e.stopPropagation()} style={columnColors['__pin__'] ? { backgroundColor: columnColors['__pin__'] } : undefined}>
                                 <button
                                     onClick={() => onTogglePin(record.id)}
-                                    title={pinnedIds.has(record.id) ? 'Unpin' : 'Pin'}
-                                    className={`p-1 rounded-2px transition-colors ${pinnedIds.has(record.id) ? 'text-red-900' : 'text-gray-300 hover:text-gray-500'}`}
+                                    title={pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? 'Unpin (team)' : 'Make team pin') : 'Pin (personal)'}
+                                    className={`p-1 rounded-2px transition-colors ${pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? 'text-orange-500' : 'text-red-900') : 'text-gray-300 hover:text-gray-500'}`}
                                 >
-                                    <Pin size={12} strokeWidth={1.5} fill={pinnedIds.has(record.id) ? '#7f1d1d' : 'none'} />
+                                    <Pin size={12} strokeWidth={1.5} fill={pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? '#f97316' : '#7f1d1d') : 'none'} />
                                 </button>
                             </td>
                             <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
@@ -375,7 +375,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const topScrollRef = useRef<HTMLDivElement>(null);
     const topInnerRef = useRef<HTMLDivElement>(null);
     const tableContainerRef = useRef<HTMLDivElement>(null);
-    const [pinnedIds, setPinnedIds] = useState<Set<number>>(new Set());
+    const [pinnedMap, setPinnedMap] = useState<Map<number, 'personal' | 'team'>>(new Map());
     const [showPinnedOnly, setShowPinnedOnly] = useState(false);
     const [stickyColumns, setStickyColumns] = useState<string[]>([]);
     const [stickyWidths, setStickyWidths] = useState<Record<string, number>>({});
@@ -496,11 +496,11 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         }
 
         if (showPinnedOnly) {
-            filtered = filtered.filter((r) => pinnedIds.has(r.id));
+            filtered = filtered.filter((r) => pinnedMap.has(r.id));
         }
 
         setRecords(filtered);
-    }, [searchTerm, activeFilters, userFilters, activeUserFilterIds, allRecords, showPinnedOnly, pinnedIds]);
+    }, [searchTerm, activeFilters, userFilters, activeUserFilterIds, allRecords, showPinnedOnly, pinnedMap]);
 
     const loadRecords = async () => {
         try {
@@ -527,7 +527,11 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const loadPins = async () => {
         try {
             const res = await pinsApi.getAll();
-            setPinnedIds(new Set(res.data));
+            const map = new Map<number, 'personal' | 'team'>();
+            for (const p of res.data) {
+                map.set(p.record_id, p.pin_type as 'personal' | 'team');
+            }
+            setPinnedMap(map);
         } catch (err) {
             console.error('Failed to load pins:', err);
         }
@@ -559,12 +563,19 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
 
     const togglePin = async (recordId: number) => {
         try {
-            if (pinnedIds.has(recordId)) {
-                await pinsApi.unpin(recordId);
-                setPinnedIds((prev) => { const next = new Set(prev); next.delete(recordId); return next; });
+            const current = pinnedMap.get(recordId);
+            if (!current) {
+                // none → personal
+                await pinsApi.pin(recordId, 'personal');
+                setPinnedMap((prev) => { const next = new Map(prev); next.set(recordId, 'personal'); return next; });
+            } else if (current === 'personal') {
+                // personal → team
+                await pinsApi.pin(recordId, 'team');
+                setPinnedMap((prev) => { const next = new Map(prev); next.set(recordId, 'team'); return next; });
             } else {
-                await pinsApi.pin(recordId);
-                setPinnedIds((prev) => new Set(prev).add(recordId));
+                // team → none
+                await pinsApi.unpin(recordId);
+                setPinnedMap((prev) => { const next = new Map(prev); next.delete(recordId); return next; });
             }
         } catch (err) {
             console.error('Failed to toggle pin:', err);
@@ -843,9 +854,9 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                 title={showPinnedOnly ? 'Show all records' : 'Show pinned only'}
                             >
                                 <Pin size={20} strokeWidth={2.5} fill={showPinnedOnly ? 'currentColor' : 'none'} />
-                                {pinnedIds.size > 0 && (
+                                {pinnedMap.size > 0 && (
                                     <span className="absolute -top-1 -right-1 bg-red-800 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                                        {pinnedIds.size}
+                                        {pinnedMap.size}
                                     </span>
                                 )}
                             </button>
@@ -1090,7 +1101,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             onCellChange={handleListCellChange}
                             onSaveRow={handleListSave}
                             onCancelRow={handleListCancel}
-                            pinnedIds={pinnedIds}
+                            pinnedMap={pinnedMap}
                             onTogglePin={togglePin}
                             activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
                             stickyColumns={stickyColumns}
@@ -1111,7 +1122,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                 setSelectedRecord(record);
                                 setIsFlyoutOpen(true);
                             }}
-                            pinnedIds={pinnedIds}
+                            pinnedMap={pinnedMap}
                             onTogglePin={togglePin}
                             activeFilters={[...systemFilters, ...activeFilters, ...userFilters]}
                             stickyColumns={stickyColumns}

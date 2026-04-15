@@ -206,11 +206,18 @@ export async function initializeDatabase(): Promise<void> {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       record_id INTEGER NOT NULL,
       pinned_by TEXT NOT NULL,
+      pin_type TEXT NOT NULL DEFAULT 'personal',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(record_id, pinned_by),
       FOREIGN KEY (record_id) REFERENCES staff_records(id) ON DELETE CASCADE
     )
   `);
+
+    // Migration: add pin_type column to pinned_records if missing
+    const pinCols = await database.all("PRAGMA table_info(pinned_records)");
+    if (!pinCols.some((c: any) => c.name === 'pin_type')) {
+        await database.exec("ALTER TABLE pinned_records ADD COLUMN pin_type TEXT NOT NULL DEFAULT 'personal'");
+    }
 
     // RecordComments table (threaded comments per record)
     await database.exec(`

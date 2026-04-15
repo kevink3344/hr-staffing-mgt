@@ -70,7 +70,7 @@ export const filtersApi = {
 // Pins API
 export const pinsApi = {
     getAll: (pinnedBy?: string) => api.get('/pins', { params: { pinned_by: pinnedBy } }),
-    pin: (recordId: number) => api.post(`/pins/${recordId}`),
+    pin: (recordId: number, pinType: 'personal' | 'team' = 'personal') => api.post(`/pins/${recordId}`, { pin_type: pinType }),
     unpin: (recordId: number) => api.delete(`/pins/${recordId}`),
 };
 
