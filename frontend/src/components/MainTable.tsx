@@ -145,7 +145,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                             <tr
                                 key={record.id}
                                 onClick={() => setActiveRowId(record.id)}
-                                className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''} ${(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 ? 'border-l-4 border-l-blue-500' : ''}`}
+                                className={`${getRowColorClass(record, activeFilters)} border-b-2 border-gray-300 cursor-pointer ${isActive ? 'outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
                             >
                                 <td className={`border-r-2 border-gray-300 px-2 ${py} w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()}>
                                     <input type="checkbox" checked={checkedIds.has(record.id)} onChange={() => onToggleCheck(record.id)} className="cursor-pointer" />
@@ -186,7 +186,10 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     </div>
                                 </td>
                                 <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
-                                    {idx + 1}
+                                    <span className="relative">
+                                        {idx + 1}
+                                        {(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 && <span className="absolute top-0 -right-2 w-1.5 h-1.5 rounded-full bg-blue-500" title="Edited in last 24h" />}
+                                    </span>
                                 </td>
                                 {visibleColumns.map((col) => {
                                     const isEditable = isActive && (EDITABLE_FIELDS as readonly string[]).includes(col);
@@ -296,7 +299,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin
                             title="Click to open details"
                             className={`${getRowColorClass(
                                 record, activeFilters
-                            )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px] ${(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 ? 'border-l-4 border-l-blue-500' : ''}`}
+                            )} border-b-2 border-gray-300 cursor-pointer transition-colors hover:outline hover:outline-2 hover:outline-blue-400 hover:outline-offset-[-2px]`}
                         >
                             <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? firstPy : py}`} onClick={(e) => e.stopPropagation()}>
                                 <input type="checkbox" checked={checkedIds.has(record.id)} onChange={() => onToggleCheck(record.id)} className="cursor-pointer" />
@@ -311,7 +314,10 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin
                                 </button>
                             </td>
                             <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
-                                {idx + 1}
+                                <span className="relative">
+                                    {idx + 1}
+                                    {(Date.now() - new Date(record.updated_at + (record.updated_at?.endsWith('Z') ? '' : 'Z')).getTime()) < 86400000 && <span className="absolute top-0 -right-2 w-1.5 h-1.5 rounded-full bg-blue-500" title="Edited in last 24h" />}
+                                </span>
                             </td>
                             {visibleColumns.map((col) => {
                                 const stickyStyle = getStickyStyle(col, visibleColumns, stickyColumns, 128, stickyWidths);
