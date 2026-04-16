@@ -1,8 +1,9 @@
 import express, { Request, Response } from 'express';
 import { getDatabase } from '../database.js';
-import { StaffRecord, StaffRecordHistory } from '../types.js';
+import { StaffRecord, StaffRecordHistory, STAFF_RECORD_COLUMNS } from '../types.js';
 
 const router = express.Router();
+const STAFF_COLUMN_SET = new Set<string>(STAFF_RECORD_COLUMNS as readonly string[]);
 
 /**
  * @swagger
@@ -54,9 +55,18 @@ router.get('/', async (req: Request, res: Response) => {
         pos_no LIKE ? OR 
         emp_no LIKE ? OR 
         last_person_name LIKE ? OR 
-        classroom_assign LIKE ?`;
+                classroom_assign LIKE ? OR
+                EXISTS (
+                    SELECT 1 FROM future_assignments fa
+                    WHERE fa.staff_record_id = staff_records.id
+                        AND (
+                            fa.classroom_assign LIKE ? OR
+                            fa.pos_no_new LIKE ? OR
+                            fa.mos LIKE ?
+                        )
+                )`;
             const searchTerm = `%${search}%`;
-            params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+            params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
         }
 
         query += ' ORDER BY id';
@@ -150,7 +160,10 @@ router.post('/', async (req: Request, res: Response) => {
         const db = await getDatabase();
         const data = req.body;
 
-        const columns = Object.keys(data).filter(k => k !== 'id');
+        const columns = Object.keys(data).filter(k => k !== 'id' && STAFF_COLUMN_SET.has(k));
+        if (columns.length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided' });
+        }
         const placeholders = columns.map(() => '?').join(', ');
         const values = columns.map(col => data[col]);
 
@@ -222,7 +235,7 @@ router.post('/bulk', async (req: Request, res: Response) => {
         for (let i = 0; i < records.length; i++) {
             try {
                 const data = records[i];
-                const columns = Object.keys(data).filter(k => k !== 'id');
+                const columns = Object.keys(data).filter(k => k !== 'id' && STAFF_COLUMN_SET.has(k));
                 if (columns.length === 0) {
                     errors.push({ index: i, error: 'No valid columns' });
                     continue;
@@ -308,7 +321,13 @@ router.put('/:id', async (req: Request, res: Response) => {
         }
 
         // Update record
-        const columns = Object.keys(req.body).filter(k => k !== 'id');
+        const columns = Object.keys(req.body).filter(k => k !== 'id' && STAFF_COLUMN_SET.has(k));
+        if (columns.length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided' });
+        }
+        Object.keys(changes).forEach((k) => {
+            if (!STAFF_COLUMN_SET.has(k)) delete changes[k];
+        });
         const setClause = columns.map(col => `${col} = ?`).join(', ');
         const values = [...columns.map(col => req.body[col]), id];
 

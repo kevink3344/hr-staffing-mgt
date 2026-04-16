@@ -33,7 +33,7 @@ export const STAFF_COLUMNS = [
     'comments',
 ] as const;
 
-export const COLUMN_LABELS: Record<typeof STAFF_COLUMNS[number], string> = {
+export const COLUMN_LABELS: Record<string, string> = {
     employee_name: 'Employee Name',
     emp_no: 'Emp No.',
     contract_renewal_yr: 'Contract Renewal Yr',
@@ -66,6 +66,7 @@ export const COLUMN_LABELS: Record<typeof STAFF_COLUMNS[number], string> = {
     contract_end_date: 'Contract End Date',
     letter_needed: 'Letter Needed?',
     comments: 'Comments',
+    future_assignments: 'Future Assignments',
 };
 
 export interface StaffRecord {
@@ -77,9 +78,7 @@ export const EDITABLE_FIELDS = [
     'last_person_name',
     'last_person_no',
     'effective_date',
-    'classroom_assign',
-    'pos_no_new',
-    'mos',
+    'future_assignments',
     'emp_percent_new',
     'track_new',
     'pay_grade',

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { staffApi, historyApi, commentsApi, queueApi } from '../api';
+import { useState, useEffect, useCallback } from 'react';
+import { staffApi, historyApi, queueApi, panelDisplayApi, futureAssignmentsApi } from '../api';
 import { COLUMN_LABELS, EDITABLE_FIELDS, StaffRecord } from '../constants';
 
 interface EditFlyoutProps {
@@ -13,22 +13,35 @@ const MIN_PANEL_WIDTH = 320;
 const MAX_PANEL_WIDTH = 900;
 const DEFAULT_PANEL_WIDTH = 384; // sm:w-96 = 24rem = 384px
 
+interface FutureAssignmentRow {
+    id?: number;
+    classroom_assign: string;
+    pos_no_new: string;
+    mos: string;
+}
+
 export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps) {
-    const [activeTab, setActiveTab] = useState<'details' | 'history' | 'comments'>('details');
+    const [activeTab, setActiveTab] = useState<'principal' | 'staff-admin' | 'history'>('principal');
     const [formData, setFormData] = useState<any>(record || {});
     const [history, setHistory] = useState<any[]>([]);
-    const [comments, setComments] = useState<any[]>([]);
-    const [newMessage, setNewMessage] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [queueItemId, setQueueItemId] = useState<number | null>(null);
     const [isQueuing, setIsQueuing] = useState(false);
     const [isPinned, setIsPinned] = useState(() => localStorage.getItem('editFlyoutPinned') === 'true');
+    const [futureAssignments, setFutureAssignments] = useState<FutureAssignmentRow[]>([]);
+    const [initialFutureAssignments, setInitialFutureAssignments] = useState<FutureAssignmentRow[]>([]);
+    const [assignmentsError, setAssignmentsError] = useState('');
     const [panelWidth, setPanelWidth] = useState(() => {
         const saved = localStorage.getItem('editFlyoutWidth');
         return saved ? Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, parseInt(saved, 10))) : DEFAULT_PANEL_WIDTH;
     });
     const [isDragging, setIsDragging] = useState(false);
-    const commentsEndRef = useRef<HTMLDivElement>(null);
+    const currentUserEmail = localStorage.getItem('userEmail') || 'demo@staffing.com';
+    const isAdmin = currentUserEmail === 'admin@staffing.com';
+    const isStaffAdminUser = currentUserEmail === 'testuser2@staffing.com';
+    const canSeeStaffAdminTab = isAdmin || isStaffAdminUser;
+    const canAccessQueue = isAdmin || isStaffAdminUser;
+    const [principalFields, setPrincipalFields] = useState<string[]>([...EDITABLE_FIELDS]);
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, window.innerWidth - e.clientX));
@@ -60,12 +73,35 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
 
     useEffect(() => {
         if (record) {
+            setActiveTab(isStaffAdminUser ? 'staff-admin' : 'principal');
             setFormData(record);
+            setAssignmentsError('');
             loadHistory(record.id);
-            loadComments(record.id);
-            checkQueueStatus(record.id);
+            if (canAccessQueue) {
+                checkQueueStatus(record.id);
+            } else {
+                setQueueItemId(null);
+            }
+            loadFutureAssignments(record.id);
         }
-    }, [record]);
+    }, [record, canAccessQueue, isStaffAdminUser]);
+
+    useEffect(() => {
+        if (!canSeeStaffAdminTab && activeTab === 'staff-admin') {
+            setActiveTab('principal');
+        }
+    }, [activeTab, canSeeStaffAdminTab]);
+
+    useEffect(() => {
+        panelDisplayApi.get().then((res) => {
+            const fields = res.data?.principal_fields;
+            if (Array.isArray(fields)) {
+                setPrincipalFields(fields.filter((f: string) => EDITABLE_FIELDS.includes(f as any)));
+            }
+        }).catch(() => {
+            setPrincipalFields([...EDITABLE_FIELDS]);
+        });
+    }, []);
 
     const loadHistory = async (recordId: number) => {
         try {
@@ -76,45 +112,82 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         }
     };
 
-    const loadComments = async (recordId: number) => {
+    const loadFutureAssignments = async (recordId: number) => {
         try {
-            const res = await commentsApi.getByRecordId(recordId);
-            setComments(res.data);
-            setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+            const res = await futureAssignmentsApi.getByRecordId(recordId);
+            const rows = (res.data || []).map((r: any) => ({
+                id: r.id,
+                classroom_assign: r.classroom_assign || '',
+                pos_no_new: r.pos_no_new || '',
+                mos: r.mos || '',
+            }));
+            setFutureAssignments(rows);
+            setInitialFutureAssignments(rows);
         } catch (err) {
-            console.error('Failed to load comments:', err);
+            console.error('Failed to load future assignments:', err);
+            setFutureAssignments([]);
+            setInitialFutureAssignments([]);
         }
     };
 
-    const handleSendComment = async () => {
-        if (!newMessage.trim() || !record) return;
-        try {
-            await commentsApi.create(record.id, newMessage.trim());
-            setNewMessage('');
-            loadComments(record.id);
-        } catch (err) {
-            console.error('Failed to send comment:', err);
+    const hasAssignmentChanges = () => JSON.stringify(futureAssignments) !== JSON.stringify(initialFutureAssignments);
+
+    const saveFutureAssignments = async (recordId: number, nextFormData: any) => {
+        const futureEmployeeNo = (nextFormData.last_person_no || '').toString().trim();
+        if (futureAssignments.length > 0 && !futureEmployeeNo) {
+            setAssignmentsError('Enter Future Employee No. before saving assignment rows.');
+            throw new Error('Future Employee No required');
         }
+
+        const normalizedRows = futureAssignments
+            .map((r) => ({
+                classroom_assign: (r.classroom_assign || '').trim(),
+                pos_no_new: (r.pos_no_new || '').trim(),
+                mos: (r.mos || '').trim(),
+            }))
+            .filter((r) => r.classroom_assign || r.pos_no_new || r.mos);
+
+        await futureAssignmentsApi.replaceForRecord(recordId, normalizedRows);
+        setInitialFutureAssignments(normalizedRows);
+        setFutureAssignments(normalizedRows);
+        setAssignmentsError('');
     };
 
-    const handleDeleteComment = async (commentId: number) => {
-        try {
-            await commentsApi.delete(commentId);
-            loadComments(record!.id);
-        } catch (err) {
-            console.error('Failed to delete comment:', err);
+    const handleAddAssignmentRow = () => {
+        if (!(formData.last_person_no || '').toString().trim()) {
+            setAssignmentsError('Enter Future Employee No. before adding assignment rows.');
+            return;
         }
+        setAssignmentsError('');
+        setFutureAssignments((prev) => ([
+            ...prev,
+            { classroom_assign: '', pos_no_new: '', mos: '' },
+        ]));
+    };
+
+    const handleRemoveAssignmentRow = (index: number) => {
+        if (!window.confirm('Are you sure you want to remove this row?')) {
+            return;
+        }
+        setFutureAssignments((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleAssignmentChange = (index: number, key: keyof FutureAssignmentRow, value: string) => {
+        setFutureAssignments((prev) => prev.map((row, i) => i === index ? { ...row, [key]: value } : row));
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
             const res = await staffApi.update(record!.id, formData);
+            await saveFutureAssignments(record!.id, formData);
             onSave(res.data);
             onClose();
         } catch (err) {
             console.error('Failed to save:', err);
-            alert('Failed to save changes');
+            if (!assignmentsError) {
+                alert('Failed to save changes');
+            }
         } finally {
             setIsSaving(false);
         }
@@ -138,10 +211,13 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         setIsQueuing(true);
         try {
             // Save any pending form changes first
-            const hasChanges = Object.keys(formData).some(k => formData[k] !== (record as any)[k]);
-            if (hasChanges) {
+            const hasRecordChanges = Object.keys(formData).some(k => formData[k] !== (record as any)[k]);
+            if (hasRecordChanges) {
                 const res = await staffApi.update(record.id, formData);
                 onSave(res.data);
+            }
+            if (hasAssignmentChanges()) {
+                await saveFutureAssignments(record.id, formData);
             }
 
             if (queueItemId) {
@@ -194,7 +270,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                         <div className="bg-gray-900 text-white p-4 border-b-2 border-gray-800">
                             <h2 className="text-lg font-bold font-mono pr-16">{record.employee_name || 'None'}</h2>
                             <div className="absolute top-4 right-4 flex items-center gap-2">
-                                {queueItemId && (
+                                {canAccessQueue && queueItemId && (
                                     <span className="w-2 h-2 rounded-full bg-blue-500" title="Pending in queue" />
                                 )}
                                 <button
@@ -225,14 +301,25 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                         {/* Tabs */}
                         <div className="flex border-b-2 border-gray-800 bg-gray-100">
                             <button
-                                onClick={() => setActiveTab('details')}
-                                className={`flex-1 py-3 px-4 font-mono text-sm font-bold border-b-2 ${activeTab === 'details'
+                                onClick={() => setActiveTab('principal')}
+                                className={`flex-1 py-3 px-4 font-mono text-sm font-bold border-b-2 ${activeTab === 'principal'
                                     ? 'bg-white border-blue-500 text-blue-700'
                                     : 'border-transparent text-gray-600 hover:text-gray-900'
                                     }`}
                             >
-                                Details
+                                Principal
                             </button>
+                            {canSeeStaffAdminTab && (
+                                <button
+                                    onClick={() => setActiveTab('staff-admin')}
+                                    className={`flex-1 py-3 px-4 font-mono text-sm font-bold border-b-2 ${activeTab === 'staff-admin'
+                                        ? 'bg-white border-blue-500 text-blue-700'
+                                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                                        }`}
+                                >
+                                    Staff Admin
+                                </button>
+                            )}
                             <button
                                 onClick={() => setActiveTab('history')}
                                 className={`flex-1 py-3 px-4 font-mono text-sm font-bold border-b-2 ${activeTab === 'history'
@@ -242,66 +329,171 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                             >
                                 History
                             </button>
-                            <button
-                                onClick={() => { setActiveTab('comments'); setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100); }}
-                                className={`flex-1 py-3 px-4 font-mono text-sm font-bold border-b-2 relative ${activeTab === 'comments'
-                                    ? 'bg-white border-blue-500 text-blue-700'
-                                    : 'border-transparent text-gray-600 hover:text-gray-900'
-                                    }`}
-                            >
-                                Chat
-                                {comments.length > 0 && (
-                                    <span className="ml-1 bg-blue-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
-                                        {comments.length}
-                                    </span>
-                                )}
-                            </button>
                         </div>
 
                         {/* Content */}
-                        <div className={`overflow-y-auto ${activeTab === 'comments' ? 'hidden' : 'flex-1'}`}>
-                            {activeTab === 'details' ? (
+                        <div className="overflow-y-auto flex-1">
+                            {activeTab === 'principal' || activeTab === 'staff-admin' ? (
                                 <div className="p-4 space-y-4">
                                     {/* Editable fields */}
                                     <div>
                                         <h3 className="font-mono font-bold text-xs text-gray-700 mb-3">
-                                            EDITABLE FIELDS
+                                            {activeTab === 'principal' ? 'PRINCIPAL FIELDS' : 'STAFF ADMIN FIELDS'}
                                         </h3>
-                                        {editableFields.map((field) => (
+                                        {(activeTab === 'principal' ? principalFields : editableFields).map((field) => (
                                             <div key={field} className="mb-3">
-                                                <label className="text-xs font-mono text-gray-600 block mb-1">
-                                                    {COLUMN_LABELS[field as keyof typeof COLUMN_LABELS]}
-                                                </label>
-                                                {field === 'comments' ? (
-                                                    <textarea
-                                                        rows={4}
-                                                        value={formData[field] || ''}
-                                                        onChange={(e) =>
-                                                            setFormData({ ...formData, [field]: e.target.value })
-                                                        }
-                                                        className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-y"
-                                                    />
-                                                ) : field === 'contract_start_date' || field === 'contract_end_date' || field === 'effective_date' ? (
-                                                    <input
-                                                        type="date"
-                                                        value={formData[field] || ''}
-                                                        onChange={(e) =>
-                                                            setFormData({ ...formData, [field]: e.target.value })
-                                                        }
-                                                        className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
-                                                    />
+                                                {field === 'future_assignments' ? (
+                                                    <>
+                                                        <label className="text-xs font-mono text-gray-600 block mb-1">
+                                                            {COLUMN_LABELS[field]}
+                                                        </label>
+                                                        <div className="border-2 border-gray-300 rounded-2px p-3 bg-gray-50">
+                                                            <div className="text-xs text-gray-500 font-mono mb-2">
+                                                                Future Employee No: <span className="font-bold text-gray-900">{(formData.last_person_no || '').toString().trim() || 'Not set'}</span>
+                                                            </div>
+                                                            {!(formData.last_person_no || '').toString().trim() && (
+                                                                <p className="text-xs text-amber-700 font-mono mb-2">
+                                                                    Enter Future Employee No. before adding assignment rows.
+                                                                </p>
+                                                            )}
+                                                            {assignmentsError && (
+                                                                <p className="text-xs text-red-600 font-mono mb-2">{assignmentsError}</p>
+                                                            )}
+                                                            <div className="space-y-2">
+                                                                {futureAssignments.map((row, idx) => (
+                                                                    <div key={`${idx}-${row.id || 'new'}`} className="grid grid-cols-12 gap-2 items-end">
+                                                                        <div className="col-span-5">
+                                                                            <label className="text-[10px] text-gray-500 font-mono block mb-1">Classroom Assign</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={row.classroom_assign}
+                                                                                onChange={(e) => handleAssignmentChange(idx, 'classroom_assign', e.target.value)}
+                                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="col-span-3">
+                                                                            <label className="text-[10px] text-gray-500 font-mono block mb-1">Pos No. (New)</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={row.pos_no_new}
+                                                                                onChange={(e) => handleAssignmentChange(idx, 'pos_no_new', e.target.value)}
+                                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="col-span-3">
+                                                                            <label className="text-[10px] text-gray-500 font-mono block mb-1">Mos.</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={row.mos}
+                                                                                onChange={(e) => handleAssignmentChange(idx, 'mos', e.target.value)}
+                                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="col-span-1">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveAssignmentRow(idx)}
+                                                                                className="w-full text-red-600 hover:text-red-800 font-bold text-lg leading-none py-2"
+                                                                                title="Remove row"
+                                                                            >
+                                                                                ×
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                                {futureAssignments.length === 0 && (
+                                                                    <p className="text-xs text-gray-500 font-mono">No assignment rows yet.</p>
+                                                                )}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleAddAssignmentRow}
+                                                                className="mt-3 font-mono font-bold text-sm text-gray-500 hover:text-gray-700 disabled:text-gray-400"
+                                                            >
+                                                                + Add Row
+                                                            </button>
+                                                        </div>
+                                                    </>
                                                 ) : (
-                                                    <input
-                                                        type="text"
-                                                        value={formData[field] || ''}
-                                                        onChange={(e) =>
-                                                            setFormData({ ...formData, [field]: e.target.value })
-                                                        }
-                                                        className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
-                                                    />
+                                                    <>
+                                                        <label className="text-xs font-mono text-gray-600 block mb-1">
+                                                            {COLUMN_LABELS[field as keyof typeof COLUMN_LABELS]}
+                                                        </label>
+                                                        {field === 'comments' ? (
+                                                            <textarea
+                                                                rows={4}
+                                                                value={formData[field] || ''}
+                                                                onChange={(e) =>
+                                                                    setFormData({ ...formData, [field]: e.target.value })
+                                                                }
+                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500 resize-y"
+                                                            />
+                                                        ) : field === 'contract_start_date' || field === 'contract_end_date' || field === 'effective_date' ? (
+                                                            <input
+                                                                type="date"
+                                                                value={formData[field] || ''}
+                                                                onChange={(e) =>
+                                                                    setFormData({ ...formData, [field]: e.target.value })
+                                                                }
+                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                            />
+                                                        ) : field === 'contract_type' ? (
+                                                            <div className="inline-flex border-2 border-gray-300 rounded-2px overflow-hidden">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setFormData({ ...formData, contract_type: 'Certified' })}
+                                                                    className={`px-3 py-2 text-sm font-mono font-bold ${formData.contract_type === 'Certified'
+                                                                        ? 'bg-blue-600 text-white'
+                                                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                                                        }`}
+                                                                >
+                                                                    Certified
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setFormData({ ...formData, contract_type: 'Non-Certified' })}
+                                                                    className={`px-3 py-2 text-sm font-mono font-bold border-l-2 border-gray-300 ${formData.contract_type === 'Non-Certified'
+                                                                        ? 'bg-blue-600 text-white'
+                                                                        : 'bg-white text-gray-700 hover:bg-gray-100'
+                                                                        }`}
+                                                                >
+                                                                    Non-Certified
+                                                                </button>
+                                                            </div>
+                                                        ) : field === 'track_new' ? (
+                                                            <select
+                                                                value={formData[field] || ''}
+                                                                onChange={(e) =>
+                                                                    setFormData({ ...formData, [field]: e.target.value })
+                                                                }
+                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500 bg-white"
+                                                            >
+                                                                <option value="">Select track...</option>
+                                                                <option value="Track 1">Track 1</option>
+                                                                <option value="Track 2">Track 2</option>
+                                                                <option value="Track 3">Track 3</option>
+                                                                <option value="Track 4">Track 4</option>
+                                                            </select>
+                                                        ) : (
+                                                            <input
+                                                                type="text"
+                                                                value={formData[field] || ''}
+                                                                onChange={(e) => {
+                                                                    setFormData({ ...formData, [field]: e.target.value });
+                                                                    if (field === 'last_person_no') setAssignmentsError('');
+                                                                }}
+                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                            />
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         ))}
+                                        {activeTab === 'principal' && principalFields.length === 0 && (
+                                            <p className="text-sm text-gray-500 font-mono">
+                                                No fields are currently visible for Principal. Configure Panel Display in Administration.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -330,14 +522,25 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                                     <span className="font-bold text-gray-900">
                                                                         {COLUMN_LABELS[field as keyof typeof COLUMN_LABELS] || field}
                                                                     </span>
-                                                                    <div className="ml-2 mt-1 space-y-1">
-                                                                        <div className="text-red-600 line-through">
-                                                                            ← {change.from || '(empty)'}
+                                                                    {field === 'future_assignments' ? (
+                                                                        <div className="ml-2 mt-1 space-y-1">
+                                                                            <div className="text-red-600 line-through">
+                                                                                ← {(() => { try { return `${JSON.parse(change.from || '[]').length} row(s)`; } catch { return '(empty)'; } })()}
+                                                                            </div>
+                                                                            <div className="text-green-600">
+                                                                                → {(() => { try { return `${JSON.parse(change.to || '[]').length} row(s)`; } catch { return '(empty)'; } })()}
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="text-green-600">
-                                                                            → {change.to || '(empty)'}
+                                                                    ) : (
+                                                                        <div className="ml-2 mt-1 space-y-1">
+                                                                            <div className="text-red-600 line-through">
+                                                                                ← {change.from || '(empty)'}
+                                                                            </div>
+                                                                            <div className="text-green-600">
+                                                                                → {change.to || '(empty)'}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
+                                                                    )}
                                                                 </div>
                                                             )
                                                         )}
@@ -350,75 +553,16 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                             )}
                         </div>
 
-                        {/* Comments tab content */}
-                        {activeTab === 'comments' && (
-                            <>
-                                <div className="flex-1 overflow-y-auto p-4">
-                                    {comments.length === 0 ? (
-                                        <p className="text-sm text-gray-500 font-mono text-center mt-8">No comments yet. Start the conversation!</p>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {comments.map((c: any) => {
-                                                const currentUser = localStorage.getItem('userEmail') || 'demo@staffing.com';
-                                                const isOwn = c.author === currentUser;
-                                                return (
-                                                    <div key={c.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                                                        <div className={`max-w-[80%] rounded-2px p-3 ${isOwn ? 'bg-blue-100 border-2 border-blue-300' : 'bg-gray-100 border-2 border-gray-300'}`}>
-                                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                                <span className="font-mono text-xs font-bold text-gray-700">{c.author}</span>
-                                                                {isOwn && (
-                                                                    <button
-                                                                        onClick={() => handleDeleteComment(c.id)}
-                                                                        className="text-red-400 hover:text-red-600 text-xs font-bold"
-                                                                        title="Delete comment"
-                                                                    >
-                                                                        ×
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                            <p className="font-mono text-sm text-gray-900 whitespace-pre-wrap">{c.message}</p>
-                                                            <span className="font-mono text-[10px] text-gray-400 mt-1 block">
-                                                                {new Date(c.created_at + 'Z').toLocaleString()}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                            <div ref={commentsEndRef} />
-                                        </div>
-                                    )}
-                                </div>
-                                {/* Chat input */}
-                                <div className="border-t-2 border-gray-800 p-3 bg-gray-100 flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleSendComment()}
-                                        placeholder="Type a message..."
-                                        className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
-                                    />
-                                    <button
-                                        onClick={handleSendComment}
-                                        disabled={!newMessage.trim()}
-                                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
-                                    >
-                                        Send
-                                    </button>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Footer - only show Save/Cancel on details/history tabs */}
-                        {activeTab !== 'comments' && (
-                            <div className="border-t-2 border-gray-800 p-4 bg-gray-100 flex gap-2">
-                                <button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
-                                >
-                                    {isSaving ? 'Saving...' : 'Save'}
-                                </button>
+                        {/* Footer */}
+                        <div className="border-t-2 border-gray-800 p-4 bg-gray-100 flex gap-2">
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                            >
+                                {isSaving ? 'Saving...' : 'Save'}
+                            </button>
+                            {canAccessQueue && (
                                 <button
                                     onClick={handleQueue}
                                     disabled={isQueuing}
@@ -429,14 +573,14 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                 >
                                     {isQueuing ? '...' : queueItemId ? 'Remove' : 'Queue'}
                                 </button>
-                                <button
-                                    onClick={onClose}
-                                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        )}
+                            )}
+                            <button
+                                onClick={onClose}
+                                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-mono font-bold py-2 px-4 rounded-2px border-2 border-gray-700"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

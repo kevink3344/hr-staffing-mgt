@@ -376,7 +376,7 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
     const [activeUserFilterIds, setActiveUserFilterIds] = useState<Set<number>>(new Set());
     const [viewMode, setViewModeRaw] = useState<'list' | 'grid'>(() => {
         const saved = localStorage.getItem('viewMode');
-        return saved === 'grid' ? 'grid' : 'list';
+        return saved === 'list' ? 'list' : 'grid';
     });
     const setViewMode = (mode: 'list' | 'grid') => { localStorage.setItem('viewMode', mode); setViewModeRaw(mode); };
     const [rowEdits, setRowEdits] = useState<Record<number, Record<string, string>>>({});
@@ -988,18 +988,6 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                         {/* Inline / Panel toggle – pill buttons */}
                         <div className={`flex gap-1 border-2 rounded-2px p-1 ${isDark ? 'border-gray-600 bg-slate-800' : 'border-gray-300 bg-gray-100'}`}>
                             <button
-                                onClick={() => setViewMode('list')}
-                                title="Edit directly in the table"
-                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${viewMode === 'list'
-                                    ? 'bg-blue-600 text-white'
-                                    : isDark
-                                        ? 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
-                                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                                    }`}
-                            >
-                                Inline
-                            </button>
-                            <button
                                 onClick={() => setViewMode('grid')}
                                 title="Edit via side panel"
                                 className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${viewMode === 'grid'
@@ -1010,6 +998,18 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                                     }`}
                             >
                                 Panel
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                title="Edit directly in the table"
+                                className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${viewMode === 'list'
+                                    ? 'bg-blue-600 text-white'
+                                    : isDark
+                                        ? 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                                    }`}
+                            >
+                                Inline
                             </button>
                         </div>
 

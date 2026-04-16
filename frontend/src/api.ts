@@ -115,4 +115,15 @@ export const userSettingsApi = {
     set: (key: string, value: string) => api.put('/user-settings', { key, value }),
 };
 
+export const panelDisplayApi = {
+    get: () => api.get('/panel-display'),
+    setPrincipalFields: (principal_fields: string[]) => api.put('/panel-display', { principal_fields }),
+};
+
+export const futureAssignmentsApi = {
+    getByRecordId: (recordId: number) => api.get(`/future-assignments/${recordId}`),
+    replaceForRecord: (recordId: number, assignments: Array<{ classroom_assign: string; pos_no_new: string; mos: string }>) =>
+        api.put(`/future-assignments/${recordId}`, { assignments }),
+};
+
 export default api;

@@ -18,6 +18,8 @@ import stickyColumnsRoutes from './routes/stickyColumns.js';
 import columnColorsRoutes from './routes/columnColors.js';
 import queueRoutes from './routes/queue.js';
 import userSettingsRoutes from './routes/userSettings.js';
+import panelDisplayRoutes from './routes/panelDisplay.js';
+import futureAssignmentsRoutes from './routes/futureAssignments.js';
 
 config();
 
@@ -215,6 +217,8 @@ app.use('/api/sticky-columns', stickyColumnsRoutes);
 app.use('/api/column-colors', columnColorsRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
+app.use('/api/panel-display', panelDisplayRoutes);
+app.use('/api/future-assignments', futureAssignmentsRoutes);
 
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url);

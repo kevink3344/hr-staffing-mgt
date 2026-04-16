@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { stickyColumnsApi, columnColorsApi } from '../api';
-import { STAFF_COLUMNS, COLUMN_LABELS } from '../constants';
+import { stickyColumnsApi, columnColorsApi, panelDisplayApi } from '../api';
+import { STAFF_COLUMNS, COLUMN_LABELS, EDITABLE_FIELDS } from '../constants';
 import { AppHeader } from './AppHeader';
 
 interface SettingsPageProps {
@@ -197,6 +197,16 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
             />
 
             <main className="max-w-6xl mx-auto p-6">
+                {/* Administration Section */}
+                <section className="mb-8">
+                    <div className="mb-4">
+                        <h2 className="text-xl font-bold text-blue-400">Administration</h2>
+                        <p className="text-sm text-gray-400 mt-1">Manage administrative panel behavior and queue-related settings.</p>
+                    </div>
+
+                    <PanelDisplaySection />
+                </section>
+
                 {/* Included Columns Section */}
                 <IncludedColumnsSection />
 
@@ -608,6 +618,145 @@ function IncludedColumnsSection() {
                         ))}
                     </div>
                     <div className="text-xs text-gray-400 mt-3">{selectedColumns.length} column{selectedColumns.length !== 1 ? 's' : ''} selected</div>
+                </div>
+            )}
+        </section>
+    );
+}
+
+function PanelDisplaySection() {
+    const currentUserEmail = localStorage.getItem('userEmail') || '';
+    const isAdminOrStaffAdmin = currentUserEmail === 'admin@staffing.com' || currentUserEmail === 'testuser2@staffing.com';
+    const isDark = localStorage.getItem('mainUiTheme') !== 'light';
+    const [selectedFields, setSelectedFields] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editFields, setEditFields] = useState<string[]>([]);
+
+    useEffect(() => {
+        panelDisplayApi.get().then((res) => {
+            const fields = res.data?.principal_fields;
+            if (Array.isArray(fields)) {
+                setSelectedFields(fields.filter((f: string) => EDITABLE_FIELDS.includes(f as any)));
+            } else {
+                setSelectedFields([...EDITABLE_FIELDS]);
+            }
+        }).catch(() => {
+            setSelectedFields([...EDITABLE_FIELDS]);
+        }).finally(() => {
+            setIsLoading(false);
+        });
+    }, []);
+
+    const startEdit = () => {
+        setEditFields([...selectedFields]);
+        setIsEditing(true);
+    };
+
+    const toggleField = (field: string) => {
+        setEditFields((prev) =>
+            prev.includes(field) ? prev.filter((f) => f !== field) : [...prev, field]
+        );
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const res = await panelDisplayApi.setPrincipalFields(editFields);
+            const fields = res.data?.principal_fields;
+            if (Array.isArray(fields)) {
+                setSelectedFields(fields.filter((f: string) => EDITABLE_FIELDS.includes(f as any)));
+            } else {
+                setSelectedFields(editFields);
+            }
+            setIsEditing(false);
+        } catch (err: any) {
+            console.error('Failed to save panel display settings:', err);
+            if (err?.response?.status === 403) {
+                alert('Only Administrator or Staff Admin User can update Panel Display settings.');
+            } else {
+                alert('Failed to save Panel Display settings.');
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <section className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h3 className="text-lg font-bold text-blue-300">Panel Display</h3>
+                    <p className="text-sm text-gray-400 mt-1">Choose which panel fields are visible on the Principal tab.</p>
+                </div>
+                {!isEditing && (
+                    <button
+                        onClick={startEdit}
+                        disabled={!isAdminOrStaffAdmin || isLoading}
+                        className={`font-bold py-2 px-4 rounded-2px border-2 ${isAdminOrStaffAdmin ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-800 cursor-pointer' : 'bg-gray-600 text-gray-400 border-gray-700 cursor-not-allowed opacity-50'}`}
+                    >
+                        {isLoading ? 'Loading...' : selectedFields.length > 0 ? 'Edit' : '+ Configure'}
+                    </button>
+                )}
+            </div>
+
+            {isEditing && (
+                <div className="border-2 border-blue-600 bg-blue-900/20 rounded-2px p-6 mb-4">
+                    <h4 className="text-lg font-bold mb-3">Select Principal Fields ({editFields.length})</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto mb-4">
+                        {EDITABLE_FIELDS.map((field, idx) => (
+                            <label
+                                key={field}
+                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-700 p-2 rounded-2px"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={editFields.includes(field)}
+                                    onChange={() => toggleField(field)}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-sm">
+                                    <span className="text-gray-400">{idx + 1}.</span> {COLUMN_LABELS[field]}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                        >
+                            {isSaving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                            onClick={() => setIsEditing(false)}
+                            className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {!isEditing && selectedFields.length === 0 ? (
+                <div className="border-2 border-gray-700 rounded-2px p-8 text-center text-gray-500">
+                    {isLoading ? 'Loading panel display settings...' : 'No principal fields configured. Click Configure to select fields shown on the Principal tab.'}
+                </div>
+            ) : !isEditing && (
+                <div className={`border-2 rounded-2px p-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}>
+                    <div className="flex flex-wrap gap-2">
+                        {selectedFields.map((field) => (
+                            <span
+                                key={field}
+                                className={`px-2 py-1 rounded-2px text-xs ${isDark ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-900'}`}
+                            >
+                                {COLUMN_LABELS[field as keyof typeof COLUMN_LABELS] || field}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-3">{selectedFields.length} field{selectedFields.length !== 1 ? 's' : ''} selected</div>
                 </div>
             )}
         </section>

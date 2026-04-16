@@ -6,8 +6,8 @@ interface SignInPageProps {
 }
 
 const USERS = [
-    { value: 'testuser1', label: 'Test User 1', email: 'testuser1@staffing.com' },
-    { value: 'testuser2', label: 'Test User 2', email: 'testuser2@staffing.com' },
+    { value: 'testuser1', label: 'Principal User', email: 'testuser1@staffing.com' },
+    { value: 'testuser2', label: 'Staff Admin User', email: 'testuser2@staffing.com' },
     { value: 'administrator', label: 'Administrator', email: 'admin@staffing.com' },
 ];
 

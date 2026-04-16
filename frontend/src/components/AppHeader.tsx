@@ -55,6 +55,7 @@ export function AppHeader({
     }, []);
 
     const loggedInUser = localStorage.getItem('userEmail') || 'demo@staffing.com';
+    const canAccessQueue = loggedInUser !== 'testuser1@staffing.com';
 
     const userIconColor = (() => {
         switch (loggedInUser) {
@@ -133,13 +134,15 @@ export function AppHeader({
                                 <Settings size={18} strokeWidth={2.5} />
                                 Settings
                             </button>
-                            <button
-                                onClick={() => { onNavigateToQueue(); setIsMenuOpen(false); }}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-cyan-300 hover:bg-slate-800' : 'text-cyan-700 hover:bg-gray-100'}`}
-                            >
-                                <Clock size={18} strokeWidth={2.5} />
-                                Queue
-                            </button>
+                            {canAccessQueue && (
+                                <button
+                                    onClick={() => { onNavigateToQueue(); setIsMenuOpen(false); }}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-2px font-mono font-bold text-sm text-left transition-colors ${isDark ? 'text-cyan-300 hover:bg-slate-800' : 'text-cyan-700 hover:bg-gray-100'}`}
+                                >
+                                    <Clock size={18} strokeWidth={2.5} />
+                                    Queue
+                                </button>
+                            )}
                             <hr className={`my-1 ${isDark ? 'border-slate-700' : 'border-gray-200'}`} />
                             <button
                                 onClick={() => { onSignOut(); setIsMenuOpen(false); }}

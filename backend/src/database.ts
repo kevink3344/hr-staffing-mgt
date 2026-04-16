@@ -11,6 +11,22 @@ const isAzure = !!process.env.WEBSITE_SITE_NAME;
 const DB_DIR = isAzure ? '/home/data' : path.join(__dirname, '../data');
 const DB_PATH = path.join(DB_DIR, 'database.sqlite');
 
+const DEFAULT_PRINCIPAL_FIELDS = [
+    'last_person_name',
+    'last_person_no',
+    'effective_date',
+    'future_assignments',
+    'emp_percent_new',
+    'track_new',
+    'pay_grade',
+    'step',
+    'contract_type',
+    'contract_start_date',
+    'contract_end_date',
+    'letter_needed',
+    'comments',
+];
+
 let db: Database | null = null;
 
 export async function getDatabase(): Promise<Database> {
@@ -292,6 +308,97 @@ export async function initializeDatabase(): Promise<void> {
         UNIQUE(user_email, setting_key)
     )
   `);
+
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS future_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      staff_record_id INTEGER NOT NULL,
+      future_employee_no TEXT NOT NULL,
+      classroom_assign TEXT,
+      pos_no_new TEXT,
+      mos TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (staff_record_id) REFERENCES staff_records(id) ON DELETE CASCADE
+    )
+  `);
+
+    // Backfill assignment rows from legacy single fields.
+    const recordsToBackfill = await database.all(`
+      SELECT id, last_person_no, classroom_assign, pos_no_new, mos
+      FROM staff_records
+      WHERE TRIM(COALESCE(last_person_no, '')) <> ''
+        AND (
+          TRIM(COALESCE(classroom_assign, '')) <> ''
+          OR TRIM(COALESCE(pos_no_new, '')) <> ''
+          OR TRIM(COALESCE(mos, '')) <> ''
+        )
+    `);
+
+    for (const row of recordsToBackfill) {
+        const existing = await database.get(
+            'SELECT id FROM future_assignments WHERE staff_record_id = ? LIMIT 1',
+            [row.id]
+        );
+
+        if (!existing) {
+            await database.run(
+                `INSERT INTO future_assignments
+                 (staff_record_id, future_employee_no, classroom_assign, pos_no_new, mos, sort_order)
+                 VALUES (?, ?, ?, ?, ?, 0)`,
+                [row.id, row.last_person_no, row.classroom_assign || '', row.pos_no_new || '', row.mos || '']
+            );
+        }
+    }
+
+    await database.exec(`
+      CREATE TABLE IF NOT EXISTS panel_display_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        setting_key TEXT NOT NULL UNIQUE,
+        setting_value TEXT NOT NULL,
+        updated_by TEXT NOT NULL,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+      `);
+
+    const principalFieldsSetting = await database.get(
+        'SELECT id FROM panel_display_settings WHERE setting_key = ?',
+        ['principal_fields']
+    );
+
+    if (!principalFieldsSetting) {
+        await database.run(
+            `INSERT INTO panel_display_settings (setting_key, setting_value, updated_by)
+           VALUES (?, ?, ?)`,
+            ['principal_fields', JSON.stringify(DEFAULT_PRINCIPAL_FIELDS), 'system']
+        );
+    } else {
+        // Migrate old panel display field list to include composite key.
+        try {
+            const existing = await database.get(
+                'SELECT setting_value FROM panel_display_settings WHERE setting_key = ?',
+                ['principal_fields']
+            );
+            const parsed = JSON.parse(existing?.setting_value || '[]');
+            if (Array.isArray(parsed)) {
+                const legacyKeys = ['classroom_assign', 'pos_no_new', 'mos'];
+                const hasLegacy = parsed.some((k: string) => legacyKeys.includes(k));
+                const next = parsed.filter((k: string, idx: number, arr: string[]) => arr.indexOf(k) === idx && !legacyKeys.includes(k));
+                if (hasLegacy && !next.includes('future_assignments')) {
+                    next.splice(3, 0, 'future_assignments');
+                }
+                await database.run(
+                    `UPDATE panel_display_settings
+             SET setting_value = ?, updated_at = CURRENT_TIMESTAMP
+             WHERE setting_key = ?`,
+                    [JSON.stringify(next), 'principal_fields']
+                );
+            }
+        } catch {
+            // If malformed JSON exists, keep DB initialization resilient.
+        }
+    }
 
     console.log('✅ Database initialized');
 }
