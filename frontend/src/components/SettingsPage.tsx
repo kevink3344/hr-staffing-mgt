@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { stickyColumnsApi, columnColorsApi, panelDisplayApi } from '../api';
-import { STAFF_COLUMNS, COLUMN_LABELS, EDITABLE_FIELDS } from '../constants';
+import { stickyColumnsApi, columnColorsApi, panelDisplayApi, copyColumnsApi } from '../api';
+import { STAFF_COLUMNS, COLUMN_LABELS, EDITABLE_FIELDS, ColumnMapping } from '../constants';
 import { AppHeader } from './AppHeader';
 
 interface SettingsPageProps {
@@ -27,9 +27,16 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
     const [colorColumn, setColorColumn] = useState<string>(STAFF_COLUMNS[0]);
     const [colorValue, setColorValue] = useState<string>('#e0f2fe');
 
+    // Copy Columns state
+    const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
+    const [isCreatingMapping, setIsCreatingMapping] = useState(false);
+    const [fromColumn, setFromColumn] = useState<string>(STAFF_COLUMNS[0]);
+    const [toColumn, setToColumn] = useState<string>(STAFF_COLUMNS[1]);
+
     useEffect(() => {
         loadStickyColumns();
         loadColumnColors();
+        loadColumnMappings();
     }, []);
 
     const loadStickyColumns = async () => {
@@ -161,6 +168,50 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
         }
     };
 
+    // Copy Columns handlers
+    const loadColumnMappings = async () => {
+        try {
+            const res = await copyColumnsApi.getAll();
+            setColumnMappings(res.data);
+        } catch (err) {
+            console.error('Failed to load column mappings:', err);
+        }
+    };
+
+    const resetMappingForm = () => {
+        setIsCreatingMapping(false);
+        setFromColumn(STAFF_COLUMNS[0]);
+        setToColumn(STAFF_COLUMNS[1]);
+    };
+
+    const handleSaveMapping = async () => {
+        try {
+            const currentUserEmail = localStorage.getItem('userEmail') || 'demo@staffing.com';
+            await copyColumnsApi.create(fromColumn, toColumn, currentUserEmail);
+            loadColumnMappings();
+            resetMappingForm();
+        } catch (err: any) {
+            console.error('Failed to save column mapping:', err);
+            if (err?.response?.status === 409) {
+                alert('This column mapping already exists');
+            } else if (err?.response?.status === 400) {
+                alert(err.response.data.error);
+            } else {
+                alert('Failed to save column mapping');
+            }
+        }
+    };
+
+    const handleDeleteMapping = async (id: number) => {
+        if (!window.confirm('Are you sure you want to delete this column mapping?')) return;
+        try {
+            await copyColumnsApi.delete(id);
+            loadColumnMappings();
+        } catch (err) {
+            console.error('Failed to delete column mapping:', err);
+        }
+    };
+
     const PASTEL_PRESETS = [
         { label: 'Blue', value: '#bfdbfe' },
         { label: 'Green', value: '#bbf7d0' },
@@ -205,6 +256,105 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
                     </div>
 
                     <PanelDisplaySection />
+                </section>
+
+                {/* Copy Columns Section */}
+                <section className="mb-8">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-blue-400">Copy Columns</h2>
+                            <p className="text-sm text-gray-400 mt-1">Configure automatic column value copying when using the copy action</p>
+                        </div>
+                        {!isCreatingMapping && (
+                            <button
+                                onClick={() => setIsCreatingMapping(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                            >
+                                + Add Mapping
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Create Form */}
+                    {isCreatingMapping && (
+                        <div className="border-2 border-blue-600 bg-blue-900/20 rounded-2px p-4 mb-4">
+                            <h3 className="text-lg font-bold mb-3">Add Column Mapping</h3>
+                            <div className="flex items-end gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-sm text-gray-400 mb-1">From Column</label>
+                                    <select
+                                        value={fromColumn}
+                                        onChange={(e) => setFromColumn(e.target.value)}
+                                        className="w-full bg-gray-800 border-2 border-gray-600 text-white p-2 rounded-2px font-mono"
+                                    >
+                                        {STAFF_COLUMNS.map((col) => (
+                                            <option key={col} value={col}>
+                                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm text-gray-400 mb-1">To Column</label>
+                                    <select
+                                        value={toColumn}
+                                        onChange={(e) => setToColumn(e.target.value)}
+                                        className="w-full bg-gray-800 border-2 border-gray-600 text-white p-2 rounded-2px font-mono"
+                                    >
+                                        {STAFF_COLUMNS.map((col) => (
+                                            <option key={col} value={col}>
+                                                {COLUMN_LABELS[col as keyof typeof COLUMN_LABELS] || col}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button
+                                    onClick={handleSaveMapping}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                                >
+                                    Save
+                                </button>
+                                <button
+                                    onClick={resetMappingForm}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mappings List */}
+                    <div className="space-y-2">
+                        {columnMappings.map((mapping) => (
+                            <div key={mapping.id} className="flex items-center justify-between bg-gray-800/50 rounded-2px p-3">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm text-gray-300">
+                                        <span className="font-bold text-blue-400">
+                                            {COLUMN_LABELS[mapping.from_column as keyof typeof COLUMN_LABELS] || mapping.from_column}
+                                        </span>
+                                        <span className="mx-2 text-gray-500">→</span>
+                                        <span className="font-bold text-green-400">
+                                            {COLUMN_LABELS[mapping.to_column as keyof typeof COLUMN_LABELS] || mapping.to_column}
+                                        </span>
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                        by {mapping.created_by}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => handleDeleteMapping(mapping.id)}
+                                    className="text-red-400 hover:text-red-300 font-bold text-lg"
+                                    title="Delete mapping"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ))}
+                        {columnMappings.length === 0 && (
+                            <p className="text-sm text-gray-500 italic">No column mappings configured yet.</p>
+                        )}
+                    </div>
                 </section>
 
                 {/* Included Columns Section */}

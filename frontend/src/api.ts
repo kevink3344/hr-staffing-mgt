@@ -126,4 +126,12 @@ export const futureAssignmentsApi = {
         api.put(`/future-assignments/${recordId}`, { assignments }),
 };
 
+// Copy Columns API
+export const copyColumnsApi = {
+    getAll: () => api.get('/copy-columns'),
+    create: (from_column: string, to_column: string, created_by: string) =>
+        api.post('/copy-columns', { from_column, to_column, created_by }),
+    delete: (id: number) => api.delete(`/copy-columns/${id}`),
+};
+
 export default api;

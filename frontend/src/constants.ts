@@ -74,6 +74,14 @@ export interface StaffRecord {
     [key: string]: any;
 }
 
+export interface ColumnMapping {
+    id: number;
+    from_column: string;
+    to_column: string;
+    created_by: string;
+    created_at: string;
+}
+
 export const EDITABLE_FIELDS = [
     'last_person_name',
     'last_person_no',

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Download, Settings, Settings2, Sun, Moon, Plus, X, Check, Pin, Clock, ArrowUp, Grip, User, Rows4, LogOut } from 'lucide-react';
-import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi, queueApi } from '../api';
-import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS } from '../constants';
+import { staffApi, viewsApi, filtersApi, pinsApi, stickyColumnsApi, columnColorsApi, queueApi, copyColumnsApi } from '../api';
+import { STAFF_COLUMNS, EDITABLE_FIELDS, StaffRecord, COLUMN_LABELS, ColumnMapping } from '../constants';
 import { getRowColorClass, getCellColorClass, getRowBgClass, hasFilterColor } from '../utils';
 import { EditFlyout } from './EditFlyout';
 import { ImportModal } from './ImportModal';
@@ -92,9 +92,11 @@ interface ListTableProps {
     columnWidths: Record<string, number>;
     onColumnResize: (col: string, width: number) => void;
     queuedIds: Set<number>;
+    loggedInUser: string;
+    onCopyColumns: (recordId: number) => void;
 }
 
-function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize, queuedIds }: ListTableProps) {
+function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow, onCancelRow, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize, queuedIds, loggedInUser, onCopyColumns }: ListTableProps) {
     const [activeRowId, setActiveRowId] = useState<number | null>(null);
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-1';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
@@ -111,6 +113,9 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                         </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
                             <div className="flex items-center justify-center"><Pin size={12} /></div>
+                        </th>
+                        <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
+                            <div className="flex items-center justify-center">📋</div>
                         </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-16 min-w-16`}>
                             ✓&nbsp;/&nbsp;✗
@@ -167,6 +172,17 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                     >
                                         <Pin size={12} strokeWidth={1.5} fill={pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? '#f97316' : '#7f1d1d') : 'none'} />
                                     </button>
+                                </td>
+                                <td className={`border-r-2 border-gray-300 px-2 ${py} w-10 min-w-10 text-center`} onClick={(e) => e.stopPropagation()}>
+                                    {(loggedInUser === 'admin@staffing.com' || loggedInUser === 'testuser2@staffing.com') && (
+                                        <button
+                                            onClick={() => onCopyColumns(record.id)}
+                                            title="Copy column values based on mappings"
+                                            className="p-1 rounded-2px transition-colors text-gray-300 hover:text-blue-400"
+                                        >
+                                            📋
+                                        </button>
+                                    )}
                                 </td>
                                 <td className={`border-r-2 border-gray-300 px-2 ${py} w-16 min-w-16`} onClick={(e) => e.stopPropagation()} style={columnColors['__edit__'] ? { backgroundColor: columnColors['__edit__'] } : undefined}>
                                     <div className="flex items-center justify-center gap-1">
@@ -252,9 +268,11 @@ interface DataTableProps {
     columnWidths: Record<string, number>;
     onColumnResize: (col: string, width: number) => void;
     queuedIds: Set<number>;
+    loggedInUser: string;
+    onCopyColumns: (recordId: number) => void;
 }
 
-function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize, queuedIds }: DataTableProps) {
+function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin, activeFilters, stickyColumns, stickyWidths, columnColors, density, checkedIds, onToggleCheck, onToggleCheckAll, columnWidths, onColumnResize, queuedIds, loggedInUser, onCopyColumns }: DataTableProps) {
     const py = density === 'very-compact' ? 'py-0' : density === 'compact' ? 'py-0.5' : 'py-2';
     const pyH = density === 'very-compact' ? 'py-0.5' : density === 'compact' ? 'py-1' : 'py-2';
     const firstPy = density === 'very-compact' ? 'pt-0.5 pb-0' : density === 'compact' ? 'pt-1 pb-0.5' : 'pt-3 pb-2';
@@ -270,6 +288,9 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin
                         </th>
                         <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
                             <div className="flex items-center justify-center"><Pin size={12} /></div>
+                        </th>
+                        <th className={`border-r-2 border-gray-300 px-2 ${pyH} text-center text-xs font-bold w-10 min-w-10`}>
+                            <div className="flex items-center justify-center">📋</div>
                         </th>
                         <th className={`border-r-2 border-gray-300 px-3 ${pyH} text-left text-xs font-bold w-12 min-w-12`}>
                             #
@@ -322,6 +343,17 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin
                                 >
                                     <Pin size={12} strokeWidth={1.5} fill={pinnedMap.has(record.id) ? (pinnedMap.get(record.id) === 'team' ? '#f97316' : '#7f1d1d') : 'none'} />
                                 </button>
+                            </td>
+                            <td className={`border-r-2 border-gray-300 px-2 text-center w-10 min-w-10 ${idx === 0 ? firstPy : py}`} onClick={(e) => e.stopPropagation()}>
+                                {(loggedInUser === 'admin@staffing.com' || loggedInUser === 'testuser2@staffing.com') && (
+                                    <button
+                                        onClick={() => onCopyColumns(record.id)}
+                                        title="Copy column values based on mappings"
+                                        className="p-1 rounded-2px transition-colors text-gray-300 hover:text-blue-400"
+                                    >
+                                        📋
+                                    </button>
+                                )}
                             </td>
                             <td className={`border-r-2 border-gray-300 px-3 text-xs text-gray-900 font-bold w-12 min-w-12 ${idx === 0 ? firstPy : py}`} style={columnColors['__row__'] ? { backgroundColor: columnColors['__row__'] } : undefined}>
                                 <span className="relative">
@@ -780,6 +812,57 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
         });
     };
 
+    const handleCopyColumns = async (recordId: number) => {
+        try {
+            // Get column mappings
+            const mappingsResponse = await copyColumnsApi.getAll();
+            const mappings: ColumnMapping[] = mappingsResponse.data;
+
+            if (mappings.length === 0) {
+                alert('No column mappings configured. Please set up mappings in Settings.');
+                return;
+            }
+
+            // Find the record
+            const record = allRecords.find(r => r.id === recordId);
+            if (!record) return;
+
+            // Apply mappings
+            const updates: Record<string, any> = {};
+            for (const mapping of mappings) {
+                const fromValue = record[mapping.from_column];
+                if (fromValue !== undefined && fromValue !== null && fromValue !== '') {
+                    updates[mapping.to_column] = fromValue;
+                }
+            }
+
+            if (Object.keys(updates).length === 0) {
+                alert('No values to copy based on current mappings.');
+                return;
+            }
+
+            // Confirm with user
+            const appliedMappings = mappings.filter(m => updates[m.to_column] !== undefined);
+            const confirmMessage = `This will copy:\n${appliedMappings.map(m => 
+                `${COLUMN_LABELS[m.from_column as keyof typeof COLUMN_LABELS] || m.from_column} → ${COLUMN_LABELS[m.to_column as keyof typeof COLUMN_LABELS] || m.to_column}`
+            ).join('\n')}\n\nContinue?`;
+
+            if (!window.confirm(confirmMessage)) return;
+
+            // Update the record
+            await staffApi.update(recordId, updates);
+
+            // Update local state
+            setAllRecords(prev => prev.map(r => r.id === recordId ? { ...r, ...updates } : r));
+            setRecords(prev => prev.map(r => r.id === recordId ? { ...r, ...updates } : r));
+
+            alert('Column values copied successfully!');
+        } catch (error) {
+            console.error('Error copying columns:', error);
+            alert('Failed to copy column values.');
+        }
+    };
+
     if (isLoading) {
         return (
             <div
@@ -1151,6 +1234,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             columnWidths={columnWidths}
                             onColumnResize={handleColumnResize}
                             queuedIds={queuedIds}
+                            loggedInUser={loggedInUser}
+                            onCopyColumns={handleCopyColumns}
                         />
                     ) : (
                         <DataTable
@@ -1173,6 +1258,8 @@ export function MainTable({ onNavigateToViews, onNavigateToFilters, onNavigateTo
                             columnWidths={columnWidths}
                             onColumnResize={handleColumnResize}
                             queuedIds={queuedIds}
+                            loggedInUser={loggedInUser}
+                            onCopyColumns={handleCopyColumns}
                         />
                     )}
                 </div>
