@@ -13,6 +13,14 @@ const NUMERIC_COLUMNS = new Set([
     'pay_grade', 'step', 'last_person_no',
 ]);
 
+// Helper function to format cell values for privacy
+function formatCellValue(col: string, value: any): string {
+    if (col === 'account_code' && typeof value === 'string' && value.length > 4) {
+        return value.slice(0, -4) + '****';
+    }
+    return value || '—';
+}
+
 interface FilterChip {
     id?: number;  // set for DB-persisted filters, absent for legend toggles
     column: string;
@@ -212,7 +220,7 @@ function ListTable({ records, visibleColumns, rowEdits, onCellChange, onSaveRow,
                                                     className="w-full bg-transparent focus:outline-none font-mono text-xs text-gray-900 px-3 py-0"
                                                 />
                                             ) : (
-                                                <span className="px-3 inline-block whitespace-nowrap overflow-hidden text-ellipsis">{record[col] || '—'}</span>
+                                                <span className="px-3 inline-block whitespace-nowrap overflow-hidden text-ellipsis">{formatCellValue(col, record[col])}</span>
                                             )}
                                         </td>
                                     );
@@ -334,7 +342,7 @@ function DataTable({ records, visibleColumns, onRowClick, pinnedMap, onTogglePin
                                         )} ${stickyStyle ? `${getRowBgClass(record, activeFilters)}` : ''} ${NUMERIC_COLUMNS.has(col) ? 'font-numbers' : ''}`}
                                         style={{ ...stickyStyle, ...(colColor ? { backgroundColor: colColor } : {}), ...(columnWidths[col] ? { width: columnWidths[col], minWidth: columnWidths[col], maxWidth: columnWidths[col] } : {}) }}
                                     >
-                                        {record[col] || '—'}
+                                        {formatCellValue(col, record[col])}
                                     </td>
                                 );
                             })}

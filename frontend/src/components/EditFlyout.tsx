@@ -345,7 +345,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                 {field === 'future_assignments' ? (
                                                     <>
                                                         <label className="text-xs font-mono text-gray-600 block mb-1">
-                                                            {COLUMN_LABELS[field]}
+                                                            Assignments
                                                         </label>
                                                         <div className="border-2 border-gray-300 rounded-2px p-3 bg-gray-50">
                                                             <div className="text-xs text-gray-500 font-mono mb-2">
@@ -359,34 +359,39 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                             {assignmentsError && (
                                                                 <p className="text-xs text-red-600 font-mono mb-2">{assignmentsError}</p>
                                                             )}
+                                                            {futureAssignments.length > 0 && (
+                                                                <div className="grid grid-cols-12 gap-2 mb-2">
+                                                                    <div className="col-span-5 text-[10px] text-gray-500 font-mono font-bold">Classroom Assign</div>
+                                                                    <div className="col-span-3 text-[10px] text-gray-500 font-mono font-bold">Pos No. (New)</div>
+                                                                    <div className="col-span-3 text-[10px] text-gray-500 font-mono font-bold">Mos.</div>
+                                                                    <div className="col-span-1"></div>
+                                                                </div>
+                                                            )}
                                                             <div className="space-y-2">
                                                                 {futureAssignments.map((row, idx) => (
                                                                     <div key={`${idx}-${row.id || 'new'}`} className="grid grid-cols-12 gap-2 items-end">
                                                                         <div className="col-span-5">
-                                                                            <label className="text-[10px] text-gray-500 font-mono block mb-1">Classroom Assign</label>
                                                                             <input
                                                                                 type="text"
                                                                                 value={row.classroom_assign}
                                                                                 onChange={(e) => handleAssignmentChange(idx, 'classroom_assign', e.target.value)}
-                                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                                                className="w-full px-2 py-2 border-0 border-b-2 border-gray-300 bg-transparent font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
                                                                             />
                                                                         </div>
                                                                         <div className="col-span-3">
-                                                                            <label className="text-[10px] text-gray-500 font-mono block mb-1">Pos No. (New)</label>
                                                                             <input
                                                                                 type="text"
                                                                                 value={row.pos_no_new}
                                                                                 onChange={(e) => handleAssignmentChange(idx, 'pos_no_new', e.target.value)}
-                                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                                                className="w-full px-2 py-2 border-0 border-b-2 border-gray-300 bg-transparent font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
                                                                             />
                                                                         </div>
                                                                         <div className="col-span-3">
-                                                                            <label className="text-[10px] text-gray-500 font-mono block mb-1">Mos.</label>
                                                                             <input
                                                                                 type="text"
                                                                                 value={row.mos}
                                                                                 onChange={(e) => handleAssignmentChange(idx, 'mos', e.target.value)}
-                                                                                className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                                                                                className="w-full px-2 py-2 border-0 border-b-2 border-gray-300 bg-transparent font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500"
                                                                             />
                                                                         </div>
                                                                         <div className="col-span-1">
