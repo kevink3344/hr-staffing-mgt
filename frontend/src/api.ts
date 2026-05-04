@@ -134,4 +134,13 @@ export const copyColumnsApi = {
     delete: (id: number) => api.delete(`/copy-columns/${id}`),
 };
 
+export const trackNewOptionsApi = {
+    getAll: (activeOnly = false) => api.get('/track-new-options', { params: activeOnly ? { active_only: 1 } : undefined }),
+    create: (label: string) => api.post('/track-new-options', { label }),
+    update: (id: number, label: string) => api.put(`/track-new-options/${id}`, { label }),
+    toggle: (id: number) => api.patch(`/track-new-options/${id}/toggle`),
+    reorder: (ids: number[]) => api.put('/track-new-options/reorder', { ids }),
+    delete: (id: number) => api.delete(`/track-new-options/${id}`),
+};
+
 export default api;

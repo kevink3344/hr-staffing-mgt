@@ -20,6 +20,8 @@ import queueRoutes from './routes/queue.js';
 import userSettingsRoutes from './routes/userSettings.js';
 import panelDisplayRoutes from './routes/panelDisplay.js';
 import futureAssignmentsRoutes from './routes/futureAssignments.js';
+import copyColumnsRoutes from './routes/copyColumns.js';
+import trackNewOptionsRoutes from './routes/trackNewOptions.js';
 
 config();
 
@@ -109,6 +111,16 @@ const swaggerOptions = {
                         is_system: { type: 'integer', enum: [0, 1] },
                         created_at: { type: 'string', format: 'date-time', readOnly: true },
                         updated_at: { type: 'string', format: 'date-time', readOnly: true },
+                    },
+                },
+                ColumnMapping: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', readOnly: true },
+                        from_column: { type: 'string', description: 'Source column name' },
+                        to_column: { type: 'string', description: 'Target column name' },
+                        created_by: { type: 'string' },
+                        created_at: { type: 'string', format: 'date-time', readOnly: true },
                     },
                 },
                 SavedFilter: {
@@ -219,6 +231,8 @@ app.use('/api/queue', queueRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/panel-display', panelDisplayRoutes);
 app.use('/api/future-assignments', futureAssignmentsRoutes);
+app.use('/api/copy-columns', copyColumnsRoutes);
+app.use('/api/track-new-options', trackNewOptionsRoutes);
 
 // Serve frontend static files in production
 const __filename = fileURLToPath(import.meta.url);

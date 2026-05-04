@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { staffApi, historyApi, queueApi, panelDisplayApi, futureAssignmentsApi } from '../api';
+import { staffApi, historyApi, queueApi, panelDisplayApi, futureAssignmentsApi, trackNewOptionsApi } from '../api';
 import { COLUMN_LABELS, EDITABLE_FIELDS, StaffRecord } from '../constants';
 
 interface EditFlyoutProps {
@@ -18,6 +18,12 @@ interface FutureAssignmentRow {
     classroom_assign: string;
     pos_no_new: string;
     mos: string;
+}
+
+interface TrackNewOption {
+    id: number;
+    label: string;
+    is_active: number;
 }
 
 export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps) {
@@ -42,6 +48,7 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
     const canSeeStaffAdminTab = isAdmin || isStaffAdminUser;
     const canAccessQueue = isAdmin || isStaffAdminUser;
     const [principalFields, setPrincipalFields] = useState<string[]>([...EDITABLE_FIELDS]);
+    const [trackNewOptions, setTrackNewOptions] = useState<TrackNewOption[]>([]);
 
     const handleMouseMove = useCallback((e: MouseEvent) => {
         const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, window.innerWidth - e.clientX));
@@ -101,7 +108,23 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
         }).catch(() => {
             setPrincipalFields([...EDITABLE_FIELDS]);
         });
+
+        trackNewOptionsApi.getAll(true).then((res) => {
+            setTrackNewOptions(Array.isArray(res.data) ? res.data : []);
+        }).catch((err) => {
+            console.error('Failed to load Track (new) options:', err);
+            setTrackNewOptions([]);
+        });
     }, []);
+
+    const visibleTrackNewOptions = (() => {
+        const options = [...trackNewOptions];
+        const currentValue = (formData.track_new || '').toString().trim();
+        if (currentValue && !options.some((option) => option.label === currentValue)) {
+            options.push({ id: -1, label: currentValue, is_active: 1 });
+        }
+        return options;
+    })();
 
     const loadHistory = async (recordId: number) => {
         try {
@@ -474,10 +497,9 @@ export function EditFlyout({ record, isOpen, onClose, onSave }: EditFlyoutProps)
                                                                 className="w-full px-2 py-2 border-2 border-gray-300 rounded-2px font-mono text-sm text-gray-900 focus:outline-none focus:border-blue-500 bg-white"
                                                             >
                                                                 <option value="">Select track...</option>
-                                                                <option value="Track 1">Track 1</option>
-                                                                <option value="Track 2">Track 2</option>
-                                                                <option value="Track 3">Track 3</option>
-                                                                <option value="Track 4">Track 4</option>
+                                                                {visibleTrackNewOptions.map((option) => (
+                                                                    <option key={`${option.id}-${option.label}`} value={option.label}>{option.label}</option>
+                                                                ))}
                                                             </select>
                                                         ) : (
                                                             <input

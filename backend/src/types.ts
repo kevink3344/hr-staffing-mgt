@@ -53,7 +53,13 @@ export interface SavedView {
     created_at: string;
     updated_at: string;
 }
-
+export interface ColumnMapping {
+    id: number;
+    from_column: string;
+    to_column: string;
+    created_by: string;
+    created_at: string;
+}
 export const STAFF_RECORD_COLUMNS = [
     'employee_name',
     'emp_no',

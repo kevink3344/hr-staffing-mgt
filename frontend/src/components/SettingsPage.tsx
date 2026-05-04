@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
-import { stickyColumnsApi, columnColorsApi, panelDisplayApi, copyColumnsApi } from '../api';
+import { stickyColumnsApi, columnColorsApi, panelDisplayApi, copyColumnsApi, trackNewOptionsApi } from '../api';
 import { STAFF_COLUMNS, COLUMN_LABELS, EDITABLE_FIELDS, ColumnMapping } from '../constants';
 import { AppHeader } from './AppHeader';
+
+interface TrackNewOption {
+    id: number;
+    label: string;
+    sort_order: number;
+    is_active: number;
+    updated_by: string;
+}
 
 interface SettingsPageProps {
     onNavigateToMain: () => void;
@@ -33,10 +41,17 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
     const [fromColumn, setFromColumn] = useState<string>(STAFF_COLUMNS[0]);
     const [toColumn, setToColumn] = useState<string>(STAFF_COLUMNS[1]);
 
+    const [trackNewOptions, setTrackNewOptions] = useState<TrackNewOption[]>([]);
+    const [isCreatingTrackOption, setIsCreatingTrackOption] = useState(false);
+    const [editingTrackOptionId, setEditingTrackOptionId] = useState<number | null>(null);
+    const [trackOptionLabel, setTrackOptionLabel] = useState('');
+    const [isTrackOptionsCollapsed, setIsTrackOptionsCollapsed] = useState(true);
+
     useEffect(() => {
         loadStickyColumns();
         loadColumnColors();
         loadColumnMappings();
+        loadTrackNewOptions();
     }, []);
 
     const loadStickyColumns = async () => {
@@ -209,6 +224,104 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
             loadColumnMappings();
         } catch (err) {
             console.error('Failed to delete column mapping:', err);
+        }
+    };
+
+    const loadTrackNewOptions = async () => {
+        try {
+            const res = await trackNewOptionsApi.getAll();
+            setTrackNewOptions(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            console.error('Failed to load Track (new) options:', err);
+        }
+    };
+
+    const resetTrackOptionForm = () => {
+        setIsCreatingTrackOption(false);
+        setEditingTrackOptionId(null);
+        setTrackOptionLabel('');
+    };
+
+    const handleEditTrackOption = (option: TrackNewOption) => {
+        setEditingTrackOptionId(option.id);
+        setIsCreatingTrackOption(true);
+        setTrackOptionLabel(option.label);
+    };
+
+    const handleSaveTrackOption = async () => {
+        const label = trackOptionLabel.trim();
+        if (!label) {
+            alert('Track (new) option label is required.');
+            return;
+        }
+
+        try {
+            if (editingTrackOptionId) {
+                await trackNewOptionsApi.update(editingTrackOptionId, label);
+            } else {
+                await trackNewOptionsApi.create(label);
+            }
+            await loadTrackNewOptions();
+            resetTrackOptionForm();
+        } catch (err: any) {
+            console.error('Failed to save Track (new) option:', err);
+            if (err?.response?.status === 409) {
+                alert('That Track (new) option already exists.');
+            } else if (err?.response?.status === 403) {
+                alert('Only Administrator or Staff Admin User can update Track (new) options.');
+            } else {
+                alert('Failed to save Track (new) option.');
+            }
+        }
+    };
+
+    const handleToggleTrackOption = async (id: number) => {
+        try {
+            await trackNewOptionsApi.toggle(id);
+            await loadTrackNewOptions();
+        } catch (err: any) {
+            console.error('Failed to toggle Track (new) option:', err);
+            alert(err?.response?.status === 403
+                ? 'Only Administrator or Staff Admin User can update Track (new) options.'
+                : 'Failed to update Track (new) option.');
+        }
+    };
+
+    const handleDeleteTrackOption = async (id: number) => {
+        if (!window.confirm('Delete this Track (new) option?')) {
+            return;
+        }
+
+        try {
+            await trackNewOptionsApi.delete(id);
+            await loadTrackNewOptions();
+        } catch (err: any) {
+            console.error('Failed to delete Track (new) option:', err);
+            alert(err?.response?.status === 403
+                ? 'Only Administrator or Staff Admin User can update Track (new) options.'
+                : 'Failed to delete Track (new) option.');
+        }
+    };
+
+    const moveTrackOption = async (id: number, direction: -1 | 1) => {
+        const currentIndex = trackNewOptions.findIndex((option) => option.id === id);
+        const nextIndex = currentIndex + direction;
+        if (currentIndex < 0 || nextIndex < 0 || nextIndex >= trackNewOptions.length) {
+            return;
+        }
+
+        const reordered = [...trackNewOptions];
+        const [moved] = reordered.splice(currentIndex, 1);
+        reordered.splice(nextIndex, 0, moved);
+
+        try {
+            await trackNewOptionsApi.reorder(reordered.map((option) => option.id));
+            await loadTrackNewOptions();
+        } catch (err: any) {
+            console.error('Failed to reorder Track (new) options:', err);
+            alert(err?.response?.status === 403
+                ? 'Only Administrator or Staff Admin User can update Track (new) options.'
+                : 'Failed to reorder Track (new) options.');
         }
     };
 
@@ -645,6 +758,153 @@ export function SettingsPage({ onNavigateToMain, onNavigateToViews, onNavigateTo
 
                 {/* Font Settings Section */}
                 <FontSettings />
+
+                {/* Track (New) Options Section */}
+                <section className="mb-8">
+                    <div className="border-2 border-gray-700 rounded-2px overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setIsTrackOptionsCollapsed((prev) => !prev)}
+                            className="w-full flex items-center justify-between gap-4 px-4 py-4 bg-gray-800/60 hover:bg-gray-800 text-left"
+                        >
+                            <div>
+                                <h2 className="text-xl font-bold text-blue-400">Track (New) Options</h2>
+                                <p className="text-sm text-gray-400 mt-1">Manage the dropdown values shown for Track (new) in the edit panel.</p>
+                            </div>
+                            <div className="text-xs font-bold text-gray-300 whitespace-nowrap">
+                                {trackNewOptions.length} option{trackNewOptions.length === 1 ? '' : 's'} · {isTrackOptionsCollapsed ? 'Expand' : 'Collapse'}
+                            </div>
+                        </button>
+
+                        {!isTrackOptionsCollapsed && (
+                            <div className="p-4 bg-slate-900/30 border-t-2 border-gray-700">
+                                <div className="flex justify-between items-center mb-4">
+                                    <div className="text-sm text-gray-400">
+                                        Reorder, activate, or edit values used by the Track (new) dropdown.
+                                    </div>
+                                    {!isCreatingTrackOption && (
+                                        <button
+                                            onClick={() => setIsCreatingTrackOption(true)}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-blue-800"
+                                        >
+                                            + Add Track Option
+                                        </button>
+                                    )}
+                                </div>
+
+                                {isCreatingTrackOption && (
+                                    <div className="border-2 border-blue-600 bg-blue-900/20 rounded-2px p-4 mb-4">
+                                        <h3 className="text-lg font-bold mb-3">
+                                            {editingTrackOptionId ? 'Edit Track (new) Option' : 'Add Track (new) Option'}
+                                        </h3>
+                                        <div className="flex flex-wrap items-end gap-4">
+                                            <div className="flex-1 min-w-full sm:min-w-0">
+                                                <label className="block text-sm text-gray-400 mb-1">Label</label>
+                                                <input
+                                                    type="text"
+                                                    value={trackOptionLabel}
+                                                    onChange={(e) => setTrackOptionLabel(e.target.value)}
+                                                    className="w-full bg-gray-800 border-2 border-gray-600 text-white p-2 rounded-2px font-mono"
+                                                    placeholder="Enter Track (new) option"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={handleSaveTrackOption}
+                                                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-green-800"
+                                            >
+                                                {editingTrackOptionId ? 'Update' : 'Add'}
+                                            </button>
+                                            <button
+                                                onClick={resetTrackOptionForm}
+                                                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-2px border-2 border-gray-800"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {trackNewOptions.length === 0 ? (
+                                    <div className="border-2 border-gray-700 rounded-2px p-8 text-center text-gray-500">
+                                        No Track (new) options configured yet.
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-3">
+                                        {trackNewOptions.map((option, index) => (
+                                            <div
+                                                key={option.id}
+                                                className={`border-2 rounded-2px p-4 flex flex-wrap items-center justify-between gap-3 ${option.is_active
+                                                    ? 'border-blue-600 bg-blue-900/20'
+                                                    : 'border-gray-700 bg-gray-900/20 opacity-60'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <span className="text-gray-500 text-sm w-6">#{index + 1}</span>
+                                                    <div>
+                                                        <div className="font-bold text-lg">{option.label}</div>
+                                                        <div className="text-xs text-gray-400">
+                                                            {option.is_active ? 'Active' : 'Inactive'} · Updated by {option.updated_by}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <div className="flex gap-1 border-2 border-gray-600 rounded-2px p-1 bg-slate-900">
+                                                        <button
+                                                            onClick={() => moveTrackOption(option.id, -1)}
+                                                            disabled={index === 0}
+                                                            className="px-3 py-1 rounded-2px font-mono text-xs font-bold text-gray-200 hover:bg-slate-700 disabled:text-gray-500 disabled:hover:bg-transparent"
+                                                        >
+                                                            Up
+                                                        </button>
+                                                        <button
+                                                            onClick={() => moveTrackOption(option.id, 1)}
+                                                            disabled={index === trackNewOptions.length - 1}
+                                                            className="px-3 py-1 rounded-2px font-mono text-xs font-bold text-gray-200 hover:bg-slate-700 disabled:text-gray-500 disabled:hover:bg-transparent"
+                                                        >
+                                                            Down
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex gap-1 border-2 border-gray-600 rounded-2px p-1 bg-slate-900">
+                                                        <button
+                                                            onClick={() => !option.is_active && handleToggleTrackOption(option.id)}
+                                                            className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${option.is_active
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                                }`}
+                                                        >
+                                                            Active
+                                                        </button>
+                                                        <button
+                                                            onClick={() => option.is_active && handleToggleTrackOption(option.id)}
+                                                            className={`px-3 py-1 rounded-2px font-mono text-xs font-bold transition-colors ${!option.is_active
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'text-gray-400 hover:text-gray-100 hover:bg-slate-700'
+                                                                }`}
+                                                        >
+                                                            Inactive
+                                                        </button>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleEditTrackOption(option)}
+                                                        className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-yellow-800 text-sm"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteTrackOption(option.id)}
+                                                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-2px border-2 border-red-800 text-sm"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </section>
             </main>
         </div>
     );

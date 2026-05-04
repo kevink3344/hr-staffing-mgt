@@ -27,6 +27,36 @@ const DEFAULT_PRINCIPAL_FIELDS = [
     'comments',
 ];
 
+  const DEFAULT_TRACK_NEW_OPTIONS = [
+    'Traditional',
+    '1',
+    '2',
+    '3',
+    '4',
+    '4A',
+    '5A',
+    '5B',
+    '5C',
+    '5D',
+    '5D Waiver/Custom Calendar',
+    '6A',
+    '6B',
+    '6C',
+    '6D',
+    '6D Waiver/Custom Calendar',
+    'Score 11 Months',
+    '7A',
+    '7B',
+    '7C',
+    '7D',
+    '7D Waiver/Custom Calendar',
+    'Modified',
+    'W1',
+    'W2',
+    'W3',
+    'YR',
+  ];
+
 let db: Database | null = null;
 
 export async function getDatabase(): Promise<Database> {
@@ -113,6 +143,18 @@ export async function initializeDatabase(): Promise<void> {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(name, created_by)
+    )
+  `);
+
+    // ColumnMapping table (for copying values between columns)
+    await database.exec(`
+    CREATE TABLE IF NOT EXISTS column_mappings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      from_column TEXT NOT NULL,
+      to_column TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(from_column, to_column)
     )
   `);
 
@@ -361,6 +403,33 @@ export async function initializeDatabase(): Promise<void> {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
       `);
+
+    await database.exec(`
+      CREATE TABLE IF NOT EXISTS track_new_options (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL UNIQUE,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_by TEXT NOT NULL,
+        updated_by TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+      `);
+
+    const existingTrackOptions = await database.get(
+        'SELECT COUNT(*) as count FROM track_new_options'
+    );
+
+    if ((existingTrackOptions?.count ?? 0) === 0) {
+        for (const [index, label] of DEFAULT_TRACK_NEW_OPTIONS.entries()) {
+            await database.run(
+                `INSERT INTO track_new_options (label, sort_order, is_active, created_by, updated_by)
+                 VALUES (?, ?, 1, 'system', 'system')`,
+                [label, index]
+            );
+        }
+    }
 
     const principalFieldsSetting = await database.get(
         'SELECT id FROM panel_display_settings WHERE setting_key = ?',
